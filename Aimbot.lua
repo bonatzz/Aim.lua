@@ -1,21 +1,21 @@
 -- ===== AIMBOT PARA MOBILE + LOADSTRING =====
 local fov = 40
 local baseSmooth = 0.2
+
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Cam = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
---================ CONFIG (TUDO ATIVADO) =================
+--================ CONFIG (TUDO ATIVADO) =================--
 local Config = {
     Enabled = true,
     ESP_Enabled = true,
     ShowFOV = true,
-    PredictionEnabled = true,
     TargetLock = true,
 }
 
---================ FOV RING =================
+--================ FOV RING =================--
 local FOVring
 pcall(function()
     FOVring = Drawing.new("Circle")
@@ -35,17 +35,7 @@ local function updateFOV()
     end
 end
 
---================ STATUS TEXT (UI) =================
-local statusText
-pcall(function()
-    statusText = Drawing.new("Text")
-    statusText.Size = 18
-    statusText.Color = Color3.fromRGB(0, 255, 0)
-    statusText.Position = Vector2.new(10, 10)
-    statusText.Text = "✅ AIMBOT ATIVO - FOV VISÍVEL"
-end)
-
---================ CACHE DE ALVOS =================
+--================ CACHE DE ALVOS =================--
 local targets = {}
 local lastTargetUpdate = 0
 local targetUpdateInterval = 0.2
@@ -67,7 +57,7 @@ local function updateTargets()
     end
 end
 
---================ DETECÇÃO DE ALVO =================
+--================ DETECÇÃO DE ALVO =================--
 local lastTarget = nil
 local function getClosestPlayer()
     updateTargets()
@@ -95,20 +85,7 @@ local function getClosestPlayer()
     return nearest
 end
 
---================ PREDIÇÃO =================
-local lastPos = {}
-local function predictPosition(head, player)
-    if not Config.PredictionEnabled then return head.Position end
-    local predictedPos = head.Position
-    if lastPos[player] then
-        local vel = (head.Position - lastPos[player]) / 0.016
-        predictedPos = head.Position + (vel * 0.08)
-    end
-    lastPos[player] = head.Position
-    return predictedPos
-end
-
---================ AIM ASSIST (SEM HUMANIZAÇÃO) =================
+--================ AIM ASSIST =================--
 local lastAimTime = 0
 local reactionDelay = 0.05
 local function aimAssist(targetData)
@@ -119,13 +96,12 @@ local function aimAssist(targetData)
     local target = targetData.head
     if not target or not target.Parent then return end
     local current = Cam.CFrame
-    local targetPos = predictPosition(target, targetData.player)
-    local goal = CFrame.new(current.Position, targetPos)
+    local goal = CFrame.new(current.Position, target.Position)
     Cam.CFrame = current:Lerp(goal, baseSmooth)
     if lastTarget ~= target then lastTarget = target end
 end
 
---================ ESP =================
+--================ ESP =================--
 local espCache = {}
 local function applyESP(player)
     if player == LocalPlayer or not Config.ESP_Enabled then return end
@@ -183,7 +159,7 @@ Players.PlayerRemoving:Connect(function(p)
     end
 end)
 
---================ MAIN LOOP =================
+--================ MAIN LOOP =================--
 RunService.RenderStepped:Connect(function()
     updateFOV()
     pcall(function()
@@ -194,7 +170,7 @@ RunService.RenderStepped:Connect(function()
     end)
 end)
 
-print("✅ AIMBOT CARREGADO!")
-print("🎯 Aimbot: LIGADO")
-print("👁️ ESP: LIGADO")
-print("⭕ FOV: VISÍVEL")
+print("✅ AIMBOT ATIVO!")
+print("🎯 Aimbot SEM predição")
+print("👁️ ESP habilitado")
+print("⭕ FOV ligado")
