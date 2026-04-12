@@ -1,7 +1,6 @@
 -- ===== AIMBOT PARA MOBILE + LOADSTRING =====
 local fov = 40
 local baseSmooth = 0.2
-local humanVarFactor = 0.1
 
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -12,7 +11,7 @@ local LocalPlayer = Players.LocalPlayer
 local Config = {
 	Enabled = true,
 	ESP_Enabled = true,
-	ShowFOV = false,
+	ShowFOV = true,
 	HumanizeMovement = true,
 	AntiDetection = true,
 	PredictionEnabled = true,
@@ -116,22 +115,6 @@ local function getClosestPlayer()
 	end
 
 	return nearest
-end
-
---================ HUMANIZAÇÃO =================--
-local function getHumanShake()
-	if not Config.HumanizeMovement then return 0 end
-	return (math.random() - 0.5) * humanVarFactor
-end
-
-local function getSmooth(screenDist)
-	local smooth = baseSmooth
-	
-	if Config.HumanizeMovement then
-		smooth = smooth + (math.random() - 0.5) * 0.03
-	end
-	
-	return math.clamp(smooth, 0.12, 0.28)
 end
 
 --================ PREDIÇÃO =================--
