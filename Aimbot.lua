@@ -38,16 +38,6 @@ local function updateFOV()
 	end
 end
 
---================ STATUS TEXT (UI) =================--
-local statusText
-pcall(function()
-	statusText = Drawing.new("Text")
-	statusText.Size = 18
-	statusText.Color = Color3.fromRGB(0, 255, 0)
-	statusText.Position = Vector2.new(10, 10)
-	statusText.Text = "✅ AIMBOT ATIVO"
-end)
-
 --================ CACHE DE ALVOS =================--
 local targets = {}
 local lastTargetUpdate = 0
