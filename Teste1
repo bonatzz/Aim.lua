@@ -1,21 +1,34 @@
 -- ╔═══════════════════════════════════════════════════════════════════════════╗
--- ║                     AimbotV2_Hardened_EVOLVED.lua                        ║
--- ║          Advanced Penetration Testing Framework for Anticheat            ║
--- ║                    Version 3.0 - ADAPTIVE HARDENED                       ║
+-- ║                  AimbotV2_MASTER_FINAL.lua                               ║
+-- ║            Complete Penetration Testing Framework for Anticheat           ║
+-- ║                    Version 4.0 - FULLY INTEGRATED                         ║
 -- ║                                                                           ║
--- ║  NEW Integrated Modules:                                                 ║
--- ║  ✓ Adaptive Delay Distributions (Non-Gaussian)                          ║
--- ║  ✓ Task Library Integration (vs Coroutines)                             ║
--- ║  ✓ Alternative Metamethod Hooking                                       ║
--- ║  ✓ CFrame History Spoofing                                              ║
--- ║  ✓ Angular Velocity Variation                                           ║
--- ║  ✓ Server-Side Validation Probing                                       ║
+-- ║  COMPLETE Integrated Modules:                                            ║
+-- ║  ✓ Functional Aimbot + FOV Ring + ESP (Working Base)                     ║
+-- ║  ✓ Adaptive Delay Distributions (5 types - Non-Gaussian)                 ║
+-- ║  ✓ Task Library Integration (vs Coroutines)                              ║
+-- ║  ✓ CFrame History Spoofing                                               ║
+-- ║  ✓ Variable Angular Velocity                                             ║
+-- ║  ✓ Alternative Metamethod Hooking                                        ║
+-- ║  ✓ Anti-Analysis Engine                                                  ║
+-- ║  ✓ Memory Cleaning System                                                ║
+-- ║  ✓ Sandbox Escape Techniques                                             ║
 -- ╚═══════════════════════════════════════════════════════════════════════════╝
 
 local _G_BACKUP = _G
 local _mt_game = getrawmetatable(game)
 local _original_index = _mt_game.__index
 local _original_namecall = _mt_game.__namecall
+
+-- ==================== CORE SERVICES ====================
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local Cam = game.Workspace.CurrentCamera
+
+-- ==================== CONFIG ====================
+local fov = 40
+local maxTransparency = 0.1
 
 -- ==================== ADAPTIVE DELAY DISTRIBUTIONS ====================
 local _delay_engine = {
@@ -61,11 +74,11 @@ local function _adaptive_delay(base_mean, base_stddev)
         end,
         
         exponential = function()
-            return _exponential_random(0.08) -- ~80ms média
+            return _exponential_random(0.08)
         end,
         
         pareto = function()
-            return _pareto_random(0.05, 1.5) -- Heavy tails (mais realista)
+            return _pareto_random(0.05, 1.5)
         end,
         
         weibull = function()
@@ -83,7 +96,7 @@ local function _adaptive_delay(base_mean, base_stddev)
     local delay = distributions[chosen]()
     delay = math.max(0.05, math.min(0.5, delay))
     
-    -- Occasional hesitation (mais realista)
+    -- Occasional hesitation
     if math.random() < 0.1 then
         delay = delay * math.random(150, 400) / 100
     end
@@ -105,9 +118,8 @@ local _camera_history = {
 }
 
 local function _initialize_camera_history()
-    -- Pre-fill com histórico falso de movimento "normal"
-    local cam = workspace.CurrentCamera
-    for i = 1, 60 do -- 60 frames @ 60fps = 1 segundo
+    local cam = Cam
+    for i = 1, 60 do
         table.insert(_camera_history.positions, cam.CFrame.Position)
         table.insert(_camera_history.timestamps, tick() - (60 - i) * (1/60))
         table.insert(_camera_history.velocities, 0)
@@ -116,11 +128,9 @@ local function _initialize_camera_history()
 end
 
 local function _record_camera_state()
-    local cam = workspace.CurrentCamera
-    
     if #_camera_history.positions > 1 then
         local prev_pos = _camera_history.positions[#_camera_history.positions]
-        local curr_pos = cam.CFrame.Position
+        local curr_pos = Cam.CFrame.Position
         local velocity = (curr_pos - prev_pos).Magnitude
         
         table.insert(_camera_history.velocities, velocity)
@@ -129,7 +139,7 @@ local function _record_camera_state()
         end
     end
     
-    table.insert(_camera_history.positions, cam.CFrame.Position)
+    table.insert(_camera_history.positions, Cam.CFrame.Position)
     table.insert(_camera_history.timestamps, tick())
     
     if #_camera_history.positions > 300 then
@@ -147,7 +157,6 @@ local function _protect_metamethods_advanced()
         local _orig_newindex = _mt_game.__newindex
         local _orig_namecall = _mt_game.__namecall
         
-        -- Hookeia __index normalmente
         _mt_game.__index = function(self, key)
             return _orig_index(self, key)
         end
@@ -160,7 +169,6 @@ local function _protect_metamethods_advanced()
             return _orig_namecall(self, ...)
         end
         
-        -- NOVO: Tenta hooking de metamethods alternativos
         pcall(function()
             if not isreadonly(_mt_game) then
                 _mt_game.__tostring = function(self)
@@ -256,140 +264,6 @@ local function _protect_against_analysis()
     end)
 end
 
--- ==================== CORE AIMBOT LOGIC ====================
-local _aimbot_config = {
-    enabled = true,
-    esp_enabled = true,
-    fov = 50,
-    base_smooth = 0.25,
-    target_check_interval = math.random(150, 250) / 1000
-}
-
-local _aimbot_state = {
-    players_alive = {},
-    esp_cache = {},
-    last_target = nil,
-    last_update = 0,
-    frame_count = 0
-}
-
-local function _is_player_alive(p)
-    return p and p.Character and p.Character:FindFirstChild("Humanoid") 
-        and p.Character.Humanoid.Health > 0
-end
-
-local function _update_alive_players()
-    if tick() - _aimbot_state.last_update < _aimbot_config.target_check_interval then 
-        return 
-    end
-    
-    _aimbot_state.last_update = tick()
-    _aimbot_state.players_alive = {}
-    
-    local players = game:GetService("Players")
-    local local_player = players.LocalPlayer
-    
-    if not local_player then return end
-    
-    for _, p in ipairs(players:GetPlayers()) do
-        if p ~= local_player and _is_player_alive(p) then
-            table.insert(_aimbot_state.players_alive, p)
-        end
-    end
-end
-
-local function _get_closest_player()
-    local closest, dist = nil, math.huge
-    local cam = workspace.CurrentCamera
-    local center = cam.ViewportSize / 2
-    
-    for _, p in ipairs(_aimbot_state.players_alive) do
-        if p and p.Character then
-            local head = p.Character:FindFirstChild("Head")
-            if head then
-                local screen_pos, vis = cam:WorldToViewportPoint(head.Position)
-                if vis then
-                    local screen_dist = (Vector2.new(screen_pos.X, screen_pos.Y) - center).Magnitude
-                    if screen_dist < _aimbot_config.fov and screen_dist < dist then
-                        closest = p
-                        dist = screen_dist
-                    end
-                end
-            end
-        end
-    end
-    
-    return closest
-end
-
--- NOVO: Variable Angular Velocity
-local function _variable_angular_velocity()
-    local base_velocity = math.random(100, 300) / 1000
-    
-    -- Occasional spikes para parecer natural
-    if math.random() < 0.15 then
-        base_velocity = base_velocity * math.random(150, 300) / 100
-    end
-    
-    -- Occasional slowdown
-    if math.random() < 0.10 then
-        base_velocity = base_velocity * math.random(50, 80) / 100
-    end
-    
-    local variation = (math.random() - 0.5) * 0.08
-    base_velocity = base_velocity + variation
-    
-    return math.max(0.05, math.min(0.5, base_velocity))
-end
-
-local function _aim_at(target)
-    if not _aimbot_config.enabled or not target or not target.Character then 
-        return 
-    end
-    
-    local head = target.Character:FindFirstChild("Head")
-    if not head then return end
-    
-    -- NOVO: Adaptive delay antes de aiming
-    _adaptive_delay()
-    
-    local smooth = _variable_angular_velocity()
-    local cam = workspace.CurrentCamera
-    local current = cam.CFrame
-    local goal = CFrame.new(current.Position, head.Position)
-    
-    cam.CFrame = current:Lerp(goal, smooth)
-    
-    -- NOVO: Record camera state para history spoofing
-    _record_camera_state()
-    
-    _aimbot_state.last_target = target
-end
-
-local function _update_esp(p)
-    if p == game:GetService("Players").LocalPlayer or not _aimbot_config.esp_enabled then 
-        return 
-    end
-    
-    local char = p.Character
-    if not char then return end
-    
-    if _aimbot_state.esp_cache[p] then 
-        pcall(function() _aimbot_state.esp_cache[p]:Destroy() end) 
-    end
-    
-    pcall(function()
-        local hl = Instance.new("Highlight")
-        hl.FillColor = Color3.fromRGB(255, 0, 255)
-        hl.OutlineColor = Color3.fromRGB(255, 0, 255)
-        hl.OutlineTransparency = 1
-        hl.FillTransparency = 0.5
-        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        hl.Parent = char
-        _aimbot_state.esp_cache[p] = hl
-    end)
-end
-
 -- ==================== SANDBOX ESCAPE TECHNIQUES ====================
 local function _escape_sandbox()
     pcall(function()
@@ -426,7 +300,6 @@ local function _protect_against_hooks_task()
         rawset = rawset,
     }
     
-    -- NOVO: Usa task.spawn() em vez de coroutine
     task.spawn(function()
         while true do
             task.wait(math.random(5, 15))
@@ -442,55 +315,15 @@ end
 
 -- ==================== BEHAVIORAL DEVIATION (TASK VERSION) ====================
 local function _behavioral_deviation_task()
-    -- NOVO: Usa task.spawn()
     task.spawn(function()
         while true do
             task.wait(math.random(60, 180))
             
             if math.random() < 0.4 then
-                _aimbot_config.fov = _aimbot_config.fov + math.random(-5, 5)
-                _aimbot_config.fov = math.max(30, math.min(90, _aimbot_config.fov))
+                fov = fov + math.random(-5, 5)
+                fov = math.max(30, math.min(90, fov))
             end
         end
-    end)
-end
-
--- ==================== MAIN EXECUTION LOOP ====================
-local function _initialize_aimbot()
-    pcall(function()
-        _initialize_camera_history()
-        _protect_metamethods_advanced()
-        _clean_memory()
-        _protect_against_analysis()
-        _escape_sandbox()
-        _protect_against_hooks_task()
-        _behavioral_deviation_task()
-        
-        local run_service = game:GetService("RunService")
-        
-        run_service.RenderStepped:Connect(function()
-            _aimbot_state.frame_count = _aimbot_state.frame_count + 1
-            
-            _update_alive_players()
-            _aim_at(_get_closest_player())
-        end)
-        
-        local players = game:GetService("Players")
-        
-        players.PlayerAdded:Connect(function(p)
-            p.CharacterAdded:Connect(function()
-                _update_esp(p)
-            end)
-        end)
-        
-        players.PlayerRemoving:Connect(function(p)
-            if _aimbot_state.esp_cache[p] then
-                pcall(function()
-                    _aimbot_state.esp_cache[p]:Destroy()
-                end)
-                _aimbot_state.esp_cache[p] = nil
-            end
-        end)
     end)
 end
 
@@ -504,26 +337,170 @@ local function _memory_cleaning_thread_task()
     end)
 end
 
--- ==================== INITIALIZATION ====================
-_initialize_aimbot()
-_memory_cleaning_thread_task()
+-- ==================== FOV RING DRAWING ====================
+local FOVring = Drawing.new("Circle")
+FOVring.Visible = true
+FOVring.Thickness = 2
+FOVring.Color = Color3.fromRGB(128, 0, 128)
+FOVring.Filled = false
+FOVring.Radius = fov
+FOVring.Position = Cam.ViewportSize / 2
 
--- ==================== CLEANUP ON DISABLE ====================
-local function _cleanup()
-    pcall(function()
-        for p, esp in pairs(_aimbot_state.esp_cache) do
-            pcall(function() esp:Destroy() end)
+local function updateDrawings()
+    local camViewportSize = Cam.ViewportSize
+    FOVring.Position = camViewportSize / 2
+    FOVring.Radius = fov
+end
+
+-- ==================== KEY HANDLING ====================
+local function onKeyDown(input)
+    if input.KeyCode == Enum.KeyCode.Delete then
+        RunService:UnbindFromRenderStep("FOVUpdate")
+        FOVring:Remove()
+    end
+end
+
+UserInputService.InputBegan:Connect(onKeyDown)
+
+-- ==================== VARIABLE ANGULAR VELOCITY ====================
+local function _variable_angular_velocity()
+    local base_velocity = math.random(100, 300) / 1000
+    
+    if math.random() < 0.15 then
+        base_velocity = base_velocity * math.random(150, 300) / 100
+    end
+    
+    if math.random() < 0.10 then
+        base_velocity = base_velocity * math.random(50, 80) / 100
+    end
+    
+    local variation = (math.random() - 0.5) * 0.08
+    base_velocity = base_velocity + variation
+    
+    return math.max(0.05, math.min(0.5, base_velocity))
+end
+
+-- ==================== LOOK AT TARGET ====================
+local function lookAt(target)
+    _adaptive_delay()
+    
+    local lookVector = (target - Cam.CFrame.Position).unit
+    local smooth = _variable_angular_velocity()
+    
+    local newCFrame = CFrame.new(Cam.CFrame.Position, Cam.CFrame.Position + lookVector)
+    
+    Cam.CFrame = Cam.CFrame:Lerp(newCFrame, smooth)
+    
+    _record_camera_state()
+end
+
+-- ==================== CALCULATE TRANSPARENCY ====================
+local function calculateTransparency(distance)
+    local maxDistance = fov
+    local transparency = (1 - (distance / maxDistance)) * maxTransparency
+    return transparency
+end
+
+-- ==================== GET CLOSEST PLAYER IN FOV ====================
+local function getClosestPlayerInFOV(trg_part)
+    local nearest = nil
+    local last = math.huge
+    local playerMousePos = Cam.ViewportSize / 2
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= Players.LocalPlayer then
+            local part = player.Character and player.Character:FindFirstChild(trg_part)
+            if part then
+                local ePos, isVisible = Cam:WorldToViewportPoint(part.Position)
+                local distance = (Vector2.new(ePos.x, ePos.y) - playerMousePos).Magnitude
+
+                if distance < last and isVisible and distance < fov then
+                    last = distance
+                    nearest = player
+                end
+            end
         end
-        _aimbot_state.esp_cache = {}
+    end
+
+    return nearest
+end
+
+-- ==================== ESP HIGHLIGHT ====================
+local esp_cache = {}
+
+local function _update_esp(player)
+    if player == Players.LocalPlayer then return end
+    
+    local char = player.Character
+    if not char then return end
+    
+    if esp_cache[player] then
+        pcall(function() esp_cache[player]:Destroy() end)
+    end
+    
+    pcall(function()
+        local hl = Instance.new("Highlight")
+        hl.FillColor = Color3.fromRGB(255, 0, 255)
+        hl.OutlineColor = Color3.fromRGB(255, 0, 255)
+        hl.OutlineTransparency = 0.5
+        hl.FillTransparency = 0.6
+        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        hl.Parent = char
+        esp_cache[player] = hl
     end)
 end
 
--- ==================== EXPORT INTERFACE ====================
-return {
-    enable = function() _aimbot_config.enabled = true end,
-    disable = function() _aimbot_config.enabled = false; _cleanup() end,
-    set_fov = function(fov) _aimbot_config.fov = math.max(10, math.min(180, fov)) end,
-    set_smooth = function(smooth) _aimbot_config.base_smooth = math.max(0.01, math.min(1, smooth)) end,
-    toggle_esp = function() _aimbot_config.esp_enabled = not _aimbot_config.esp_enabled end,
-    get_status = function() return _aimbot_config.enabled end
-}
+-- ==================== PLAYER EVENTS ====================
+Players.PlayerAdded:Connect(function(p)
+    p.CharacterAdded:Connect(function()
+        _update_esp(p)
+    end)
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if esp_cache[p] then
+        pcall(function()
+            esp_cache[p]:Destroy()
+        end)
+        esp_cache[p] = nil
+    end
+end)
+
+-- ==================== INITIALIZATION ====================
+_initialize_camera_history()
+_protect_metamethods_advanced()
+_clean_memory()
+_protect_against_analysis()
+_escape_sandbox()
+_protect_against_hooks_task()
+_behavioral_deviation_task()
+_memory_cleaning_thread_task()
+
+-- ==================== MAIN RENDER LOOP ====================
+RunService.RenderStepped:Connect(function()
+    updateDrawings()
+    local closest = getClosestPlayerInFOV("Head")
+    
+    if closest and closest.Character and closest.Character:FindFirstChild("Head") then
+        lookAt(closest.Character.Head.Position)
+    end
+    
+    if closest then
+        local ePos, isVisible = Cam:WorldToViewportPoint(closest.Character.Head.Position)
+        local distance = (Vector2.new(ePos.x, ePos.y) - (Cam.ViewportSize / 2)).Magnitude
+        FOVring.Transparency = calculateTransparency(distance)
+    else
+        FOVring.Transparency = 0.1
+    end
+end)
+
+-- ==================== CLEANUP ====================
+local function cleanup()
+    pcall(function()
+        for p, hl in pairs(esp_cache) do
+            pcall(function() hl:Destroy() end)
+        end
+        esp_cache = {}
+    end)
+    FOVring:Remove()
+end
