@@ -1,5 +1,11 @@
+-- ╔═══════════════════════════════════════════════════════════════════════════╗
+-- ║                     Protection.lua - Anti-Detection Module               ║
+-- ║                    Carregado em background (Lazy Loading)                ║
+-- ╚═══════════════════════════════════════════════════════════════════════════╝
+
 local _mt_game = getrawmetatable(game)
 
+-- ==================== METAMETHOD PROTECTION ====================
 local function _protect_metamethods()
     pcall(function()
         if isreadonly(_mt_game) then return end
@@ -29,6 +35,7 @@ local function _protect_metamethods()
     end)
 end
 
+-- ==================== ANTI-ANALYSIS ====================
 local function _protect_analysis()
     pcall(function()
         local _orig_getinfo = debug.getinfo
@@ -66,6 +73,7 @@ local function _protect_analysis()
     end)
 end
 
+-- ==================== SANDBOX ESCAPE ====================
 local function _escape_sandbox()
     pcall(function()
         local mt = getrawmetatable(game)
@@ -82,6 +90,7 @@ local function _escape_sandbox()
     end)
 end
 
+-- ==================== ANTI-HOOK ====================
 local function _protect_hooks()
     local original_functions = {
         print = print,
@@ -102,6 +111,7 @@ local function _protect_hooks()
     end)
 end
 
+-- ==================== MEMORY CLEANING ====================
 local function _clean_memory()
     pcall(function()
         local suspicious = {"aimbot", "esp", "cheat", "hack", "exploit", "bypass", "detection", "anticheat"}
@@ -125,6 +135,7 @@ local function _clean_thread()
     end)
 end
 
+-- ==================== EXPORT ====================
 return {
     init = function()
         _protect_metamethods()
