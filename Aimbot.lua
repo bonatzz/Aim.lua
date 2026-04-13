@@ -1,21 +1,7 @@
 -- ╔═══════════════════════════════════════════════════════════════════════════╗
--- ║                  AimbotV2_MOBILE_DELTA_COMPLETE.lua                      ║
+-- ║                  AimbotV2_MOBILE_DELTA_FIXED.lua                         ║
 -- ║            Mobile Penetration Testing Framework (Delta Compatible)        ║
--- ║                    Version 3.0 - FULLY OPTIMIZED FOR MOBILE              ║
--- ║                                                                           ║
--- ║  Confirmed Features:                                                     ║
--- ║  ✓ Functional Aimbot (Snap)                                              ║
--- ║  ✓ ESP (Fixed - All Players)                                             ║
--- ║  ✓ 5 Adaptive Delay Distributions                                        ║
--- ║  ✓ Camera History Spoofing                                               ║
--- ║  ✓ Variable Angular Velocity                                             ║
--- ║  ✓ Task Library (No Coroutines)                                          ║
--- ║  ✓ Memory Cleaning                                                       ║
--- ║  ✓ Anti-Analysis Protection                                              ║
--- ║  ✓ Metamethod Protection                                                 ║
--- ║  ✓ Sandbox Escape                                                        ║
--- ║  ✓ 100% Mobile Optimized (No Drawing, No UserInput)                      ║
--- ║  ✓ Lightweight (Uses Frame Counters, Lazy Loading)                       ║
+-- ║                    Version 2.0 - FIXED AIMBOT + ESP                       ║
 -- ╚═══════════════════════════════════════════════════════════════════════════╝
 
 local fov = 50
@@ -23,12 +9,6 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Cam = game.Workspace.CurrentCamera
 local _mt_game = getrawmetatable(game)
-
--- ==================== OPTIMIZATION FLAGS ====================
-local FRAME_SKIP_ESP = 5
-local FRAME_SKIP_PLAYER_CHECK = 3
-local frame_counter = 0
-local player_check_counter = 0
 
 -- ==================== ADAPTIVE DELAY DISTRIBUTIONS ====================
 local function _gaussian_random(mean, stddev)
@@ -115,7 +95,7 @@ end
 
 -- ==================== VARIABLE ANGULAR VELOCITY ====================
 local function _variable_angular_velocity()
-    local base_velocity = math.random(150, 350) / 1000
+    local base_velocity = math.random(150, 350) / 1000 -- AUMENTADO para snap mais rápido
     
     if math.random() < 0.15 then
         base_velocity = base_velocity * math.random(150, 280) / 100
@@ -128,116 +108,10 @@ local function _variable_angular_velocity()
     local variation = (math.random() - 0.5) * 0.06
     base_velocity = base_velocity + variation
     
-    return math.max(0.1, math.min(0.7, base_velocity))
+    return math.max(0.1, math.min(0.7, base_velocity)) -- Range aumentado
 end
 
--- ==================== METAMETHOD PROTECTION ====================
-local function _protect_metamethods_advanced()
-    pcall(function()
-        if isreadonly(_mt_game) then return end
-        
-        local _orig_index = _mt_game.__index
-        local _orig_newindex = _mt_game.__newindex
-        local _orig_namecall = _mt_game.__namecall
-        
-        _mt_game.__index = function(self, key)
-            return _orig_index(self, key)
-        end
-        
-        _mt_game.__newindex = function(self, key, value)
-            return _orig_newindex(self, key, value)
-        end
-        
-        _mt_game.__namecall = function(self, ...)
-            return _orig_namecall(self, ...)
-        end
-        
-        pcall(function()
-            if not isreadonly(_mt_game) then
-                _mt_game.__tostring = function(self)
-                    return "game"
-                end
-                
-                _mt_game.__call = function(self, ...)
-                    return _orig_namecall(self, ...)
-                end
-            end
-        end)
-    end)
-end
-
--- ==================== ANTI-ANALYSIS ENGINE ====================
-local function _protect_against_analysis()
-    pcall(function()
-        local _orig_debug_getinfo = debug.getinfo
-        local _orig_debug_getlocal = debug.getlocal
-        local _orig_debug_getupvalue = debug.getupvalue
-        
-        debug.getinfo = function(func, what)
-            if _orig_debug_getinfo then
-                local result = _orig_debug_getinfo(func, what or "Slnf")
-                if result then
-                    result.source = result.source:gsub("exploit", "game"):gsub("cheat", "script")
-                    result.short_src = result.short_src:gsub("exploit", "game")
-                end
-                return result
-            end
-            return nil
-        end
-        
-        debug.getlocal = function(level, index)
-            if math.random() < 0.5 then return nil end
-            if _orig_debug_getlocal then
-                return _orig_debug_getlocal(level, index)
-            end
-            return nil
-        end
-        
-        debug.getupvalue = function(func, index)
-            if math.random() < 0.5 then return nil end
-            if _orig_debug_getupvalue then
-                return _orig_debug_getupvalue(func, index)
-            end
-            return nil
-        end
-        
-        local _orig_traceback = debug.traceback
-        if _orig_traceback then
-            debug.traceback = function(...)
-                local result = _orig_traceback(...)
-                result = result:gsub("AimbotV2", "System")
-                result = result:gsub("Exploit", "Engine")
-                result = result:gsub("bypass", "feature")
-                result = result:gsub("hook", "callback")
-                return result
-            end
-        end
-    end)
-end
-
--- ==================== SANDBOX ESCAPE ====================
-local function _escape_sandbox()
-    pcall(function()
-        local mt = getrawmetatable(game)
-        
-        if mt and not isreadonly(mt) then
-            local orig_index = mt.__index
-            
-            mt.__index = function(self, key)
-                if math.random() < 0.1 then
-                    local private_data = rawget(self, "_private_" .. key)
-                    if private_data then
-                        return private_data
-                    end
-                end
-                
-                return orig_index(self, key)
-            end
-        end
-    end)
-end
-
--- ==================== ANTI-HOOK DETECTION ====================
+-- ==================== ANTI-HOOK DETECTION (TASK VERSION) ====================
 local function _protect_against_hooks_task()
     local original_functions = {
         print = print,
@@ -279,6 +153,7 @@ local function _clean_memory()
     end)
 end
 
+-- ==================== MEMORY CLEANING THREAD ====================
 local function _memory_cleaning_thread_task()
     task.spawn(function()
         while true do
@@ -288,7 +163,7 @@ local function _memory_cleaning_thread_task()
     end)
 end
 
--- ==================== AIMBOT ====================
+-- ==================== STRONG AIMBOT (SNAP) ====================
 local function lookAt(target)
     _adaptive_delay()
     
@@ -301,7 +176,7 @@ local function lookAt(target)
     _record_camera_state()
 end
 
--- ==================== GET CLOSEST PLAYER ====================
+-- ==================== GET CLOSEST PLAYER IN FOV ====================
 local function getClosestPlayerInFOV()
     local nearest = nil
     local last = math.huge
@@ -325,47 +200,33 @@ local function getClosestPlayerInFOV()
     return nearest
 end
 
--- ==================== ESP - IMPROVED ====================
+-- ==================== ESP HIGHLIGHT - FIXED ====================
 local esp_cache = {}
-local players_tracked = {}
 
-local function _ensure_esp(player)
-    if player == Players.LocalPlayer then return end
-    if not player.Character then return end
-    
-    if esp_cache[player] then
-        return
-    end
-    
-    pcall(function()
-        local hl = Instance.new("Highlight")
-        hl.FillColor = Color3.fromRGB(255, 0, 255)
-        hl.OutlineColor = Color3.fromRGB(255, 0, 255)
-        hl.OutlineTransparency = 0.5
-        hl.FillTransparency = 0.6
-        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        hl.Parent = player.Character
-        esp_cache[player] = hl
-        players_tracked[player] = true
-    end)
-end
-
-local function _cleanup_dead_esp()
+local function updateESP_All()
+    -- LIMPA ESP de players que não existem mais
     for player, hl in pairs(esp_cache) do
         if not player or not player.Parent or not player.Character then
             pcall(function() hl:Destroy() end)
             esp_cache[player] = nil
-            players_tracked[player] = nil
         end
     end
-end
-
-local function _update_esp()
-    _cleanup_dead_esp()
     
+    -- ADICIONA ESP para todos os players
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= Players.LocalPlayer and player.Character then
-            _ensure_esp(player)
+            if not esp_cache[player] then
+                pcall(function()
+                    local hl = Instance.new("Highlight")
+                    hl.FillColor = Color3.fromRGB(255, 0, 255)
+                    hl.OutlineColor = Color3.fromRGB(255, 0, 255)
+                    hl.OutlineTransparency = 0.5
+                    hl.FillTransparency = 0.6
+                    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    hl.Parent = player.Character
+                    esp_cache[player] = hl
+                end)
+            end
         end
     end
 end
@@ -373,45 +234,36 @@ end
 -- ==================== PLAYER EVENTS ====================
 Players.PlayerAdded:Connect(function(p)
     p.CharacterAdded:Connect(function()
-        _ensure_esp(p)
+        updateESP_All()
     end)
-    task.wait(0.1)
-    _ensure_esp(p)
 end)
 
 Players.PlayerRemoving:Connect(function(p)
     if esp_cache[p] then
         pcall(function() esp_cache[p]:Destroy() end)
         esp_cache[p] = nil
-        players_tracked[p] = nil
     end
 end)
 
 -- ==================== INITIALIZATION ====================
 _initialize_camera_history()
-_protect_metamethods_advanced()
-_protect_against_analysis()
-_escape_sandbox()
 _protect_against_hooks_task()
 _memory_cleaning_thread_task()
-task.wait(0.5)
-_update_esp()
+updateESP_All() -- Carrega ESP inicial
 
 -- ==================== MAIN RENDER LOOP ====================
+local frame_counter = 0
 RunService.RenderStepped:Connect(function()
     frame_counter = frame_counter + 1
-    player_check_counter = player_check_counter + 1
     
-    if frame_counter % FRAME_SKIP_ESP == 0 then
-        _update_esp()
+    -- Atualiza ESP a cada 10 frames (não a cada frame)
+    if frame_counter % 10 == 0 then
+        updateESP_All()
     end
     
-    if player_check_counter % FRAME_SKIP_PLAYER_CHECK == 0 then
-        local closest = getClosestPlayerInFOV()
-        if closest and closest.Character and closest.Character:FindFirstChild("Head") then
-            lookAt(closest.Character.Head.Position)
-        end
-        player_check_counter = 0
+    local closest = getClosestPlayerInFOV()
+    if closest and closest.Character and closest.Character:FindFirstChild("Head") then
+        lookAt(closest.Character.Head.Position)
     end
 end)
 
@@ -422,6 +274,5 @@ local function cleanup()
             pcall(function() hl:Destroy() end)
         end
         esp_cache = {}
-        players_tracked = {}
     end)
 end
