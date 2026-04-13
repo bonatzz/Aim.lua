@@ -2,12 +2,7 @@
 -- ║                        Core.lua - Main Script                            ║
 -- ║                    Mobile Penetration Testing - Core Logic               ║
 -- ║                                                                           ║
--- ║  Features:                                                               ║
--- ║  ✓ Aimbot Snap (Functional)                                              ║
--- ║  ✓ ESP (Fixed - All Players)                                             ║
--- ║  ✓ Adaptive Delays                                                       ║
--- ║  ✓ Lazy Loading Protection Modules                                       ║
--- ║  ✓ Optimized for Mobile                                                  ║
+-- ║                                                    ║
 -- ╚═══════════════════════════════════════════════════════════════════════════╝
 
 local RunService = game:GetService("RunService")
