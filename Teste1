@@ -1,45 +1,16 @@
 -- ╔═══════════════════════════════════════════════════════════════════════════╗
--- ║                  AimbotV2_MASTER_FINAL.lua                               ║
--- ║            Complete Penetration Testing Framework for Anticheat           ║
--- ║                    Version 4.0 - FULLY INTEGRATED                         ║
--- ║                                                                           ║
--- ║  COMPLETE Integrated Modules:                                            ║
--- ║  ✓ Functional Aimbot + FOV Ring + ESP (Working Base)                     ║
--- ║  ✓ Adaptive Delay Distributions (5 types - Non-Gaussian)                 ║
--- ║  ✓ Task Library Integration (vs Coroutines)                              ║
--- ║  ✓ CFrame History Spoofing                                               ║
--- ║  ✓ Variable Angular Velocity                                             ║
--- ║  ✓ Alternative Metamethod Hooking                                        ║
--- ║  ✓ Anti-Analysis Engine                                                  ║
--- ║  ✓ Memory Cleaning System                                                ║
--- ║  ✓ Sandbox Escape Techniques                                             ║
+-- ║                  AimbotV2_MOBILE_DELTA_FINAL.lua                         ║
+-- ║            Mobile Penetration Testing Framework (Delta Compatible)        ║
+-- ║                    Version 1.0 - MOBILE OPTIMIZED                        ║
 -- ╚═══════════════════════════════════════════════════════════════════════════╝
 
-local _G_BACKUP = _G
-local _mt_game = getrawmetatable(game)
-local _original_index = _mt_game.__index
-local _original_namecall = _mt_game.__namecall
-
--- ==================== CORE SERVICES ====================
+local fov = 40
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local Cam = game.Workspace.CurrentCamera
-
--- ==================== CONFIG ====================
-local fov = 40
-local maxTransparency = 0.1
+local _mt_game = getrawmetatable(game)
 
 -- ==================== ADAPTIVE DELAY DISTRIBUTIONS ====================
-local _delay_engine = {
-    history = {},
-    pattern_cache = {},
-    last_pattern = 0,
-    deviation_level = 0,
-    distribution_index = 1
-}
-
--- Múltiplas distribuições matemáticas
 local function _gaussian_random(mean, stddev)
     local u1 = math.random() / 32767
     local u2 = math.random() / 32767
@@ -64,27 +35,20 @@ local function _rayleigh_random(sigma)
     return sigma * math.sqrt(-2 * math.log(math.random()))
 end
 
--- Seleciona distribuição aleatoriamente
-local function _adaptive_delay(base_mean, base_stddev)
+local function _adaptive_delay()
     local distributions = {
         gaussian = function()
-            local mean = base_mean or (math.random(80, 150) / 1000)
-            local stddev = base_stddev or (math.random(20, 50) / 1000)
-            return _gaussian_random(mean, stddev)
+            return _gaussian_random(0.08, 0.03)
         end,
-        
         exponential = function()
             return _exponential_random(0.08)
         end,
-        
         pareto = function()
             return _pareto_random(0.05, 1.5)
         end,
-        
         weibull = function()
             return _weibull_random(0.1, 1.2)
         end,
-        
         rayleigh = function()
             return _rayleigh_random(0.08)
         end
@@ -92,18 +56,12 @@ local function _adaptive_delay(base_mean, base_stddev)
     
     local dist_names = {"gaussian", "exponential", "pareto", "weibull", "rayleigh"}
     local chosen = dist_names[math.random(1, #dist_names)]
-    
     local delay = distributions[chosen]()
-    delay = math.max(0.05, math.min(0.5, delay))
     
-    -- Occasional hesitation
-    if math.random() < 0.1 then
-        delay = delay * math.random(150, 400) / 100
-    end
+    delay = math.max(0.02, math.min(0.3, delay))
     
-    table.insert(_delay_engine.history, {delay = delay, time = tick(), dist = chosen})
-    if #_delay_engine.history > 1000 then
-        table.remove(_delay_engine.history, 1)
+    if math.random() < 0.12 then
+        delay = delay * math.random(180, 350) / 100
     end
     
     return delay
@@ -112,7 +70,6 @@ end
 -- ==================== CAMERA HISTORY SPOOFING ====================
 local _camera_history = {
     positions = {},
-    angles = {},
     velocities = {},
     timestamps = {}
 }
@@ -123,7 +80,6 @@ local function _initialize_camera_history()
         table.insert(_camera_history.positions, cam.CFrame.Position)
         table.insert(_camera_history.timestamps, tick() - (60 - i) * (1/60))
         table.insert(_camera_history.velocities, 0)
-        table.insert(_camera_history.angles, 0)
     end
 end
 
@@ -148,142 +104,22 @@ local function _record_camera_state()
     end
 end
 
--- ==================== ALTERNATIVE METAMETHOD HOOKING ====================
-local function _protect_metamethods_advanced()
-    pcall(function()
-        if isreadonly(_mt_game) then return end
-        
-        local _orig_index = _mt_game.__index
-        local _orig_newindex = _mt_game.__newindex
-        local _orig_namecall = _mt_game.__namecall
-        
-        _mt_game.__index = function(self, key)
-            return _orig_index(self, key)
-        end
-        
-        _mt_game.__newindex = function(self, key, value)
-            return _orig_newindex(self, key, value)
-        end
-        
-        _mt_game.__namecall = function(self, ...)
-            return _orig_namecall(self, ...)
-        end
-        
-        pcall(function()
-            if not isreadonly(_mt_game) then
-                _mt_game.__tostring = function(self)
-                    return "game"
-                end
-                
-                _mt_game.__call = function(self, ...)
-                    return _orig_namecall(self, ...)
-                end
-            end
-        end)
-    end)
-end
-
--- ==================== MEMORY CLEANING SYSTEM ====================
-local function _clean_memory()
-    pcall(function()
-        local suspicious = {
-            "aimbot", "esp", "cheat", "hack", "exploit",
-            "bypass", "detection", "anticheat", "script",
-            "loadstring", "getfenv", "setfenv", "debug",
-            "wallhack", "speedhack", "godmode"
-        }
-        
-        for _, pattern in ipairs(suspicious) do
-            for key, value in pairs(_G) do
-                if type(key) == "string" and key:lower():find(pattern) then
-                    if math.random() < 0.6 then
-                        rawset(_G, key, nil)
-                    else
-                        if type(value) == "function" then
-                            _G[key] = function() return nil end
-                        elseif type(value) == "table" then
-                            _G[key] = setmetatable({}, {__index = function() return nil end})
-                        else
-                            _G[key] = nil
-                        end
-                    end
-                end
-            end
-        end
-        
-        collectgarbage("collect")
-    end)
-end
-
--- ==================== ANTI-ANALYSIS ENGINE ====================
-local function _protect_against_analysis()
-    pcall(function()
-        local _orig_debug_getinfo = debug.getinfo
-        local _orig_debug_getlocal = debug.getlocal
-        local _orig_debug_getupvalue = debug.getupvalue
-        
-        debug.getinfo = function(func, what)
-            if _orig_debug_getinfo then
-                local result = _orig_debug_getinfo(func, what or "Slnf")
-                if result then
-                    result.source = result.source:gsub("exploit", "game"):gsub("cheat", "script")
-                    result.short_src = result.short_src:gsub("exploit", "game")
-                end
-                return result
-            end
-            return nil
-        end
-        
-        debug.getlocal = function(level, index)
-            if math.random() < 0.5 then return nil end
-            if _orig_debug_getlocal then
-                return _orig_debug_getlocal(level, index)
-            end
-            return nil
-        end
-        
-        debug.getupvalue = function(func, index)
-            if math.random() < 0.5 then return nil end
-            if _orig_debug_getupvalue then
-                return _orig_debug_getupvalue(func, index)
-            end
-            return nil
-        end
-        
-        local _orig_traceback = debug.traceback
-        if _orig_traceback then
-            debug.traceback = function(...)
-                local result = _orig_traceback(...)
-                result = result:gsub("AimbotV2", "System")
-                result = result:gsub("Exploit", "Engine")
-                result = result:gsub("bypass", "feature")
-                result = result:gsub("hook", "callback")
-                return result
-            end
-        end
-    end)
-end
-
--- ==================== SANDBOX ESCAPE TECHNIQUES ====================
-local function _escape_sandbox()
-    pcall(function()
-        local mt = getrawmetatable(game)
-        
-        if mt and not isreadonly(mt) then
-            local orig_index = mt.__index
-            
-            mt.__index = function(self, key)
-                if math.random() < 0.1 then
-                    local private_data = rawget(self, "_private_" .. key)
-                    if private_data then
-                        return private_data
-                    end
-                end
-                
-                return orig_index(self, key)
-            end
-        end
-    end)
+-- ==================== VARIABLE ANGULAR VELOCITY ====================
+local function _variable_angular_velocity()
+    local base_velocity = math.random(80, 250) / 1000
+    
+    if math.random() < 0.15 then
+        base_velocity = base_velocity * math.random(150, 280) / 100
+    end
+    
+    if math.random() < 0.10 then
+        base_velocity = base_velocity * math.random(50, 80) / 100
+    end
+    
+    local variation = (math.random() - 0.5) * 0.06
+    base_velocity = base_velocity + variation
+    
+    return math.max(0.03, math.min(0.4, base_velocity))
 end
 
 -- ==================== ANTI-HOOK DETECTION (TASK VERSION) ====================
@@ -291,18 +127,13 @@ local function _protect_against_hooks_task()
     local original_functions = {
         print = print,
         warn = warn,
-        error = error,
         type = type,
         pairs = pairs,
-        ipairs = ipairs,
-        next = next,
-        rawget = rawget,
-        rawset = rawset,
     }
     
     task.spawn(function()
         while true do
-            task.wait(math.random(5, 15))
+            task.wait(math.random(8, 20))
             
             for func_name, original_func in pairs(original_functions) do
                 if _G[func_name] ~= original_func then
@@ -313,74 +144,37 @@ local function _protect_against_hooks_task()
     end)
 end
 
--- ==================== BEHAVIORAL DEVIATION (TASK VERSION) ====================
-local function _behavioral_deviation_task()
-    task.spawn(function()
-        while true do
-            task.wait(math.random(60, 180))
-            
-            if math.random() < 0.4 then
-                fov = fov + math.random(-5, 5)
-                fov = math.max(30, math.min(90, fov))
+-- ==================== MEMORY CLEANING ====================
+local function _clean_memory()
+    pcall(function()
+        local suspicious = {
+            "aimbot", "esp", "cheat", "hack", "exploit",
+            "bypass", "detection", "anticheat"
+        }
+        
+        for _, pattern in ipairs(suspicious) do
+            for key, value in pairs(_G) do
+                if type(key) == "string" and key:lower():find(pattern) then
+                    rawset(_G, key, nil)
+                end
             end
         end
+        
+        collectgarbage("collect")
     end)
 end
 
--- ==================== MEMORY CLEANING THREAD (TASK VERSION) ====================
+-- ==================== MEMORY CLEANING THREAD ====================
 local function _memory_cleaning_thread_task()
     task.spawn(function()
         while true do
-            task.wait(math.random(60, 120))
+            task.wait(math.random(90, 150))
             _clean_memory()
         end
     end)
 end
 
--- ==================== FOV RING DRAWING ====================
-local FOVring = Drawing.new("Circle")
-FOVring.Visible = true
-FOVring.Thickness = 2
-FOVring.Color = Color3.fromRGB(128, 0, 128)
-FOVring.Filled = false
-FOVring.Radius = fov
-FOVring.Position = Cam.ViewportSize / 2
-
-local function updateDrawings()
-    local camViewportSize = Cam.ViewportSize
-    FOVring.Position = camViewportSize / 2
-    FOVring.Radius = fov
-end
-
--- ==================== KEY HANDLING ====================
-local function onKeyDown(input)
-    if input.KeyCode == Enum.KeyCode.Delete then
-        RunService:UnbindFromRenderStep("FOVUpdate")
-        FOVring:Remove()
-    end
-end
-
-UserInputService.InputBegan:Connect(onKeyDown)
-
--- ==================== VARIABLE ANGULAR VELOCITY ====================
-local function _variable_angular_velocity()
-    local base_velocity = math.random(100, 300) / 1000
-    
-    if math.random() < 0.15 then
-        base_velocity = base_velocity * math.random(150, 300) / 100
-    end
-    
-    if math.random() < 0.10 then
-        base_velocity = base_velocity * math.random(50, 80) / 100
-    end
-    
-    local variation = (math.random() - 0.5) * 0.08
-    base_velocity = base_velocity + variation
-    
-    return math.max(0.05, math.min(0.5, base_velocity))
-end
-
--- ==================== LOOK AT TARGET ====================
+-- ==================== SIMPLE LOOK AT TARGET ====================
 local function lookAt(target)
     _adaptive_delay()
     
@@ -388,28 +182,20 @@ local function lookAt(target)
     local smooth = _variable_angular_velocity()
     
     local newCFrame = CFrame.new(Cam.CFrame.Position, Cam.CFrame.Position + lookVector)
-    
     Cam.CFrame = Cam.CFrame:Lerp(newCFrame, smooth)
     
     _record_camera_state()
 end
 
--- ==================== CALCULATE TRANSPARENCY ====================
-local function calculateTransparency(distance)
-    local maxDistance = fov
-    local transparency = (1 - (distance / maxDistance)) * maxTransparency
-    return transparency
-end
-
 -- ==================== GET CLOSEST PLAYER IN FOV ====================
-local function getClosestPlayerInFOV(trg_part)
+local function getClosestPlayerInFOV()
     local nearest = nil
     local last = math.huge
     local playerMousePos = Cam.ViewportSize / 2
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= Players.LocalPlayer then
-            local part = player.Character and player.Character:FindFirstChild(trg_part)
+            local part = player.Character and player.Character:FindFirstChild("Head")
             if part then
                 local ePos, isVisible = Cam:WorldToViewportPoint(part.Position)
                 local distance = (Vector2.new(ePos.x, ePos.y) - playerMousePos).Magnitude
@@ -428,7 +214,7 @@ end
 -- ==================== ESP HIGHLIGHT ====================
 local esp_cache = {}
 
-local function _update_esp(player)
+local function updateESP(player)
     if player == Players.LocalPlayer then return end
     
     local char = player.Character
@@ -453,44 +239,29 @@ end
 -- ==================== PLAYER EVENTS ====================
 Players.PlayerAdded:Connect(function(p)
     p.CharacterAdded:Connect(function()
-        _update_esp(p)
+        updateESP(p)
     end)
+    updateESP(p)
 end)
 
 Players.PlayerRemoving:Connect(function(p)
     if esp_cache[p] then
-        pcall(function()
-            esp_cache[p]:Destroy()
-        end)
+        pcall(function() esp_cache[p]:Destroy() end)
         esp_cache[p] = nil
     end
 end)
 
 -- ==================== INITIALIZATION ====================
 _initialize_camera_history()
-_protect_metamethods_advanced()
-_clean_memory()
-_protect_against_analysis()
-_escape_sandbox()
 _protect_against_hooks_task()
-_behavioral_deviation_task()
 _memory_cleaning_thread_task()
 
 -- ==================== MAIN RENDER LOOP ====================
 RunService.RenderStepped:Connect(function()
-    updateDrawings()
-    local closest = getClosestPlayerInFOV("Head")
+    local closest = getClosestPlayerInFOV()
     
     if closest and closest.Character and closest.Character:FindFirstChild("Head") then
         lookAt(closest.Character.Head.Position)
-    end
-    
-    if closest then
-        local ePos, isVisible = Cam:WorldToViewportPoint(closest.Character.Head.Position)
-        local distance = (Vector2.new(ePos.x, ePos.y) - (Cam.ViewportSize / 2)).Magnitude
-        FOVring.Transparency = calculateTransparency(distance)
-    else
-        FOVring.Transparency = 0.1
     end
 end)
 
@@ -502,5 +273,4 @@ local function cleanup()
         end
         esp_cache = {}
     end)
-    FOVring:Remove()
 end
