@@ -1,19 +1,23 @@
--- ===== AIMBOT PARA MOBILE + LOADSTRING =====
-local fov = 50
-local baseSmooth = 0.25
+local AntiCheat = loadstring(game:HttpGet("https://raw.githubusercontent.com/bonatzz/Aim.lua/main/AntiCheat.lua"))()
+local AntiDetect = loadstring(game:HttpGet("https://raw.githubusercontent.com/bonatzz/Aim.lua/main/AntiDetect.lua"))()
+local SpeedBypass = loadstring(game:HttpGet("https://raw.githubusercontent.com/bonatzz/Aim.lua/main/SpeedBypass.lua"))()
 
+AntiCheat:HideActivity()
+AntiDetect:HideFromDebugger()
+AntiDetect:RemoveSignatures()
+SpeedBypass:BypassSpeedCheck()
+
+local fov = 50
+local baseSmooth = 0.10
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Cam = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
---================ CONFIG =================--
-local Config = {
-    Enabled = true,
-    ESP_Enabled = true
-}
+local Config = { Enabled = true, ESP_Enabled = true }
+local playersAlive = {}
+local espCache = {}
 
---================ FOV =================--
 local FOVring = Drawing.new("Circle")
 FOVring.Visible = true
 FOVring.Thickness = 3
@@ -21,110 +25,75 @@ FOVring.Color = Color3.fromRGB(100, 200, 255)
 FOVring.Filled = false
 FOVring.Radius = fov
 
-local function updateFOV()
-    FOVring.Position = Cam.ViewportSize / 2
+local function isPlayerAlive(p)
+    return p and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0
 end
 
---================ PLAYER TRACKING =================--
-local playersAlive = {}
-
-local function isPlayerAlive(player)
-    if not player then return false end
-    if not player.Character then return false end
-    local humanoid = player.Character:FindFirstChild("Humanoid")
-    return humanoid and humanoid.Health > 0
-end
-
+local lastUpdate = 0
 local function updateAlivePlayers()
+    if tick() - lastUpdate < 0.2 then return end
+    lastUpdate = tick()
     playersAlive = {}
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and isPlayerAlive(player) then
-            table.insert(playersAlive, player)
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and isPlayerAlive(p) then
+            table.insert(playersAlive, p)
         end
     end
 end
 
---================ AIMBOT =================--
 local function getClosestPlayer()
-    local closestPlayer = nil
-    local shortestDistance = math.huge
-    local cameraPosition = Cam.CFrame.Position
-    local viewCenter = Cam.ViewportSize / 2
-
-    for _, player in ipairs(playersAlive) do
-        local character = player.Character
-        local head = character:FindFirstChild("Head")
+    local closest, dist = nil, math.huge
+    local center = Cam.ViewportSize / 2
+    for _, p in ipairs(playersAlive) do
+        local head = p.Character:FindFirstChild("Head")
         if head then
-            local worldPosition = head.Position
-            local screenPosition, visible = Cam:WorldToViewportPoint(worldPosition)
-            if visible then
-                local distance = (Vector2.new(screenPosition.X, screenPosition.Y) - viewCenter).Magnitude
-                if distance < shortestDistance and distance < fov then
-                    closestPlayer = player
-                    shortestDistance = distance
+            local screenPos, vis = Cam:WorldToViewportPoint(head.Position)
+            if vis then
+                local screenDist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                if screenDist < fov and screenDist < dist then
+                    closest = p
+                    dist = screenDist
                 end
             end
         end
     end
-
-    return closestPlayer
+    return closest
 end
 
 local function aimAt(target)
-    if not target then return end
-    local character = target.Character
-    if not character then return end
-    local head = character:FindFirstChild("Head")
-    if not head then return end
-
-    local currentCameraCFrame = Cam.CFrame
-    local goalCFrame = CFrame.new(currentCameraCFrame.Position, head.Position)
-
-    Cam.CFrame = currentCameraCFrame:Lerp(goalCFrame, baseSmooth)
-end
-
---================ ESP =================--
-local espCache = {}
-
-local function updateESP(player)
-    if player == LocalPlayer or not Config.ESP_Enabled then return end
-    local character = player.Character
-    if not character then return end
-
-    if espCache[player] then
-        espCache[player]:Destroy()
-    end
-
-    local highlight = Instance.new("Highlight")
-    highlight.FillColor = Color3.fromRGB(255, 0, 255)
-    highlight.OutlineColor = Color3.new(1, 1, 1)
-    highlight.Parent = character
-
-    espCache[player] = highlight
-end
-
-local function removeESP(player)
-    if espCache[player] then
-        espCache[player]:Destroy()
-        espCache[player] = nil
+    if Config.Enabled and target and target.Character then
+        local head = target.Character:FindFirstChild("Head")
+        if head then
+            local current = Cam.CFrame
+            local goal = CFrame.new(current.Position, head.Position)
+            Cam.CFrame = current:Lerp(goal, baseSmooth)
+        end
     end
 end
 
---================ MAIN =================--
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function()
-        updateESP(player)
-    end)
+local function updateESP(p)
+    if p == LocalPlayer or not Config.ESP_Enabled then return end
+    local char = p.Character
+    if not char then return end
+    if espCache[p] then pcall(function() espCache[p]:Destroy() end) end
+    local hl = Instance.new("Highlight")
+    hl.FillColor = Color3.fromRGB(255, 0, 255)
+    hl.Parent = char
+    espCache[p] = hl
+end
+
+Players.PlayerAdded:Connect(function(p)
+    p.CharacterAdded:Connect(function() updateESP(p) end)
 end)
 
-Players.PlayerRemoving:Connect(function(player)
-    removeESP(player)
+Players.PlayerRemoving:Connect(function(p)
+    if espCache[p] then pcall(function() espCache[p]:Destroy() end) espCache[p] = nil end
 end)
 
 RunService.RenderStepped:Connect(function()
     updateAlivePlayers()
-    updateFOV()
-
-    local closestPlayer = getClosestPlayer()
-    aimAt(closestPlayer)
+    FOVring.Position = Cam.ViewportSize / 2
+    aimAt(getClosestPlayer())
 end)
+
+print("✅ AIMBOT + ANTI-BAN CARREGADO!")
