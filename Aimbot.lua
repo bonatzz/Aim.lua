@@ -8,7 +8,7 @@ AntiDetect:RemoveSignatures()
 SpeedBypass:BypassSpeedCheck()
 
 local fov = 50
-local baseSmooth = 0.10
+local baseSmooth = 0.20
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Cam = workspace.CurrentCamera
