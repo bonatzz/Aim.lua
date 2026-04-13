@@ -146,3 +146,5 @@ return {
         print("[Protection] Módulo de proteção ativado!")
     end
 }
+
+getgenv()._SECURED = true
