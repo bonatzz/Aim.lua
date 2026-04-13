@@ -5,6 +5,13 @@
 -- ║                                                    ║
 -- ╚═══════════════════════════════════════════════════════════════════════════╝
 -- 
+-- === BLOQUEIO SEM PROTECTION ===
+if not getgenv()._SECURED then
+    warn("[Core] Proteção não detectada! Abortando...")
+    return
+end
+-- === FIM ===
+
 -- === PROTECTION LOADER (sempre primeiro) ===
 if not getgenv().PROTECTION_LOADED then
     getgenv().PROTECTION_LOADED = true
