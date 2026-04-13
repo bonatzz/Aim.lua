@@ -4,46 +4,7 @@
 -- ║                                                                           ║
 -- ║                                                    ║
 -- ╚═══════════════════════════════════════════════════════════════════════════╝
--- 
--- === BLOQUEIO SEM PROTECTION ===
-if not getgenv()._SECURED then
-    warn("[Core] Proteção não detectada! Abortando...")
-    return
-end
--- === FIM ===
-
--- === PROTECTION LOADER (sempre primeiro) ===
-if not getgenv().PROTECTION_LOADED then
-    getgenv().PROTECTION_LOADED = true
-
-    local success, err = pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/bonatzz/Aim.lua/refs/heads/main/Protection.lua"))()
-    end)
-
-    if not success then
-        warn("[Protection] Erro ao carregar:", err)
-    else
-        print("[Protection] Ativado com sucesso")
-    end
-end
--- === FIM DA PROTECTION ===
-
-
--- === TRAVA DE SEGURANÇA (OBRIGA PROTECTION) ===
-if not getgenv()._SECURED then
-    warn("[Main] Proteção não detectada! Abortando execução...")
-    return
-end
--- === FIM DA TRAVA ===
-
-
--- =========================
--- 🚀 SEU MAIN COMEÇA AQUI
--- =========================
-
-print("[Main] Iniciando sistema protegido...")
-
--- resto do seu código aqui
+--
 
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -238,7 +199,5 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
-
-getgenv()._SECURED = true
 
 print("[Core] Aimbot carregado com sucesso!")
