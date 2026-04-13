@@ -110,8 +110,3 @@ RunService.RenderStepped:Connect(function()
     FOVring.Position = Cam.ViewportSize / 2
     aimAt(getClosestPlayer())
 end)
-
-print("✅ AIMBOT UNIVERSAL CARREGADO!")
-print("🛡️ Anti-Ban: ATIVO")
-print("🔐 Ofuscação: ATIVA")
-print("⚡ Randomização: ATIVA")
