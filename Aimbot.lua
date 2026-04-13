@@ -1,14 +1,26 @@
+local Obfuscator = loadstring(game:HttpGet("https://raw.githubusercontent.com/bonatzz/Aim.lua/main/Obfuscator.lua"))()
+local MemoryCleaner = loadstring(game:HttpGet("https://raw.githubusercontent.com/bonatzz/Aim.lua/main/MemoryCleaner.lua"))()
+local HookBypass = loadstring(game:HttpGet("https://raw.githubusercontent.com/bonatzz/Aim.lua/main/HookBypass.lua"))()
+local Randomizer = loadstring(game:HttpGet("https://raw.githubusercontent.com/bonatzz/Aim.lua/main/Randomizer.lua"))()
+local SandboxEscape = loadstring(game:HttpGet("https://raw.githubusercontent.com/bonatzz/Aim.lua/main/SandboxEscape.lua"))()
+local AntiAnalysis = loadstring(game:HttpGet("https://raw.githubusercontent.com/bonatzz/Aim.lua/main/AntiAnalysis.lua"))()
 local AntiCheat = loadstring(game:HttpGet("https://raw.githubusercontent.com/bonatzz/Aim.lua/main/AntiCheat.lua"))()
 local AntiDetect = loadstring(game:HttpGet("https://raw.githubusercontent.com/bonatzz/Aim.lua/main/AntiDetect.lua"))()
 local SpeedBypass = loadstring(game:HttpGet("https://raw.githubusercontent.com/bonatzz/Aim.lua/main/SpeedBypass.lua"))()
 
+MemoryCleaner:CleanGlobals()
+MemoryCleaner:ClearMemory()
+MemoryCleaner:RemoveDebugInfo()
+HookBypass:BypassMetamethods()
+HookBypass:BlockDetectionCalls()
+SandboxEscape:EscapeRestrictions()
+AntiAnalysis:HideScriptExecution()
+AntiAnalysis:FakeStackTrace()
 AntiCheat:HideActivity()
 AntiDetect:HideFromDebugger()
-AntiDetect:RemoveSignatures()
-SpeedBypass:BypassSpeedCheck()
 
 local fov = 50
-local baseSmooth = 0.20
+local baseSmooth = 0.25
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Cam = workspace.CurrentCamera
@@ -42,6 +54,7 @@ local function updateAlivePlayers()
 end
 
 local function getClosestPlayer()
+    Randomizer:RandomDelay()
     local closest, dist = nil, math.huge
     local center = Cam.ViewportSize / 2
     for _, p in ipairs(playersAlive) do
@@ -64,9 +77,11 @@ local function aimAt(target)
     if Config.Enabled and target and target.Character then
         local head = target.Character:FindFirstChild("Head")
         if head then
+            Randomizer:RandomPatterns()
+            local smooth = Randomizer:VariableSmoothing()
             local current = Cam.CFrame
             local goal = CFrame.new(current.Position, head.Position)
-            Cam.CFrame = current:Lerp(goal, baseSmooth)
+            Cam.CFrame = current:Lerp(goal, smooth)
         end
     end
 end
@@ -96,4 +111,7 @@ RunService.RenderStepped:Connect(function()
     aimAt(getClosestPlayer())
 end)
 
-print("✅ AIMBOT + ANTI-BAN CARREGADO!")
+print("✅ AIMBOT UNIVERSAL CARREGADO!")
+print("🛡️ Anti-Ban: ATIVO")
+print("🔐 Ofuscação: ATIVA")
+print("⚡ Randomização: ATIVA")
