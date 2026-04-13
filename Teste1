@@ -1,10 +1,10 @@
 -- ╔═══════════════════════════════════════════════════════════════════════════╗
--- ║                  AimbotV2_MOBILE_DELTA_FINAL.lua                         ║
+-- ║                  AimbotV2_MOBILE_DELTA_FIXED.lua                         ║
 -- ║            Mobile Penetration Testing Framework (Delta Compatible)        ║
--- ║                    Version 1.0 - MOBILE OPTIMIZED                        ║
+-- ║                    Version 2.0 - FIXED AIMBOT + ESP                       ║
 -- ╚═══════════════════════════════════════════════════════════════════════════╝
 
-local fov = 40
+local fov = 50
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Cam = game.Workspace.CurrentCamera
@@ -37,27 +37,16 @@ end
 
 local function _adaptive_delay()
     local distributions = {
-        gaussian = function()
-            return _gaussian_random(0.08, 0.03)
-        end,
-        exponential = function()
-            return _exponential_random(0.08)
-        end,
-        pareto = function()
-            return _pareto_random(0.05, 1.5)
-        end,
-        weibull = function()
-            return _weibull_random(0.1, 1.2)
-        end,
-        rayleigh = function()
-            return _rayleigh_random(0.08)
-        end
+        gaussian = function() return _gaussian_random(0.08, 0.03) end,
+        exponential = function() return _exponential_random(0.08) end,
+        pareto = function() return _pareto_random(0.05, 1.5) end,
+        weibull = function() return _weibull_random(0.1, 1.2) end,
+        rayleigh = function() return _rayleigh_random(0.08) end
     }
     
     local dist_names = {"gaussian", "exponential", "pareto", "weibull", "rayleigh"}
     local chosen = dist_names[math.random(1, #dist_names)]
     local delay = distributions[chosen]()
-    
     delay = math.max(0.02, math.min(0.3, delay))
     
     if math.random() < 0.12 then
@@ -106,7 +95,7 @@ end
 
 -- ==================== VARIABLE ANGULAR VELOCITY ====================
 local function _variable_angular_velocity()
-    local base_velocity = math.random(80, 250) / 1000
+    local base_velocity = math.random(150, 350) / 1000 -- AUMENTADO para snap mais rápido
     
     if math.random() < 0.15 then
         base_velocity = base_velocity * math.random(150, 280) / 100
@@ -119,7 +108,7 @@ local function _variable_angular_velocity()
     local variation = (math.random() - 0.5) * 0.06
     base_velocity = base_velocity + variation
     
-    return math.max(0.03, math.min(0.4, base_velocity))
+    return math.max(0.1, math.min(0.7, base_velocity)) -- Range aumentado
 end
 
 -- ==================== ANTI-HOOK DETECTION (TASK VERSION) ====================
@@ -174,7 +163,7 @@ local function _memory_cleaning_thread_task()
     end)
 end
 
--- ==================== SIMPLE LOOK AT TARGET ====================
+-- ==================== STRONG AIMBOT (SNAP) ====================
 local function lookAt(target)
     _adaptive_delay()
     
@@ -211,37 +200,42 @@ local function getClosestPlayerInFOV()
     return nearest
 end
 
--- ==================== ESP HIGHLIGHT ====================
+-- ==================== ESP HIGHLIGHT - FIXED ====================
 local esp_cache = {}
 
-local function updateESP(player)
-    if player == Players.LocalPlayer then return end
-    
-    local char = player.Character
-    if not char then return end
-    
-    if esp_cache[player] then
-        pcall(function() esp_cache[player]:Destroy() end)
+local function updateESP_All()
+    -- LIMPA ESP de players que não existem mais
+    for player, hl in pairs(esp_cache) do
+        if not player or not player.Parent or not player.Character then
+            pcall(function() hl:Destroy() end)
+            esp_cache[player] = nil
+        end
     end
     
-    pcall(function()
-        local hl = Instance.new("Highlight")
-        hl.FillColor = Color3.fromRGB(255, 0, 255)
-        hl.OutlineColor = Color3.fromRGB(255, 0, 255)
-        hl.OutlineTransparency = 0.5
-        hl.FillTransparency = 0.6
-        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        hl.Parent = char
-        esp_cache[player] = hl
-    end)
+    -- ADICIONA ESP para todos os players
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= Players.LocalPlayer and player.Character then
+            if not esp_cache[player] then
+                pcall(function()
+                    local hl = Instance.new("Highlight")
+                    hl.FillColor = Color3.fromRGB(255, 0, 255)
+                    hl.OutlineColor = Color3.fromRGB(255, 0, 255)
+                    hl.OutlineTransparency = 0.5
+                    hl.FillTransparency = 0.6
+                    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    hl.Parent = player.Character
+                    esp_cache[player] = hl
+                end)
+            end
+        end
+    end
 end
 
 -- ==================== PLAYER EVENTS ====================
 Players.PlayerAdded:Connect(function(p)
     p.CharacterAdded:Connect(function()
-        updateESP(p)
+        updateESP_All()
     end)
-    updateESP(p)
 end)
 
 Players.PlayerRemoving:Connect(function(p)
@@ -255,11 +249,19 @@ end)
 _initialize_camera_history()
 _protect_against_hooks_task()
 _memory_cleaning_thread_task()
+updateESP_All() -- Carrega ESP inicial
 
 -- ==================== MAIN RENDER LOOP ====================
+local frame_counter = 0
 RunService.RenderStepped:Connect(function()
-    local closest = getClosestPlayerInFOV()
+    frame_counter = frame_counter + 1
     
+    -- Atualiza ESP a cada 10 frames (não a cada frame)
+    if frame_counter % 10 == 0 then
+        updateESP_All()
+    end
+    
+    local closest = getClosestPlayerInFOV()
     if closest and closest.Character and closest.Character:FindFirstChild("Head") then
         lookAt(closest.Character.Head.Position)
     end
