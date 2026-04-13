@@ -1,5 +1,5 @@
 -- ╔═══════════════════════════════════════════════════════════════════════════╗
--- ║                     AimbotV2_Hardened.lua                                ║
+-- ║                     AimbotV2_Hardened.lua - FIXED                        ║
 -- ║          Advanced Penetration Testing Framework for Anticheat            ║
 -- ║                    Version 2.0 - ULTRA HARDENED                          ║
 -- ║                                                                           ║
@@ -29,7 +29,7 @@ local function _xor_encode(str, key)
 end
 
 local function _xor_decode(str, key)
-    return _xor_encode(str, key) -- XOR é simétrico
+    return _xor_encode(str, key)
 end
 
 -- ==================== POLYMORPHIC CODE GENERATOR ====================
@@ -61,112 +61,40 @@ local _delay_engine = {
 local function _gaussian_random(mean, stddev)
     local u1 = math.random() / 32767
     local u2 = math.random() / 32767
+    if u1 < 0.0001 then u1 = 0.0001 end
     local z0 = math.sqrt(-2 * math.log(u1)) * math.cos(2 * math.pi * u2)
     return mean + (z0 * stddev)
 end
 
-local function _smart_delay()
-    local mean = math.random(80, 150) / 1000
-    local stddev = math.random(20, 50) / 1000
-    local delay = _gaussian_random(mean, stddev)
-    
-    -- Clamp to realistic values
-    delay = math.max(0.05, math.min(0.5, delay))
-    
-    -- Occasional hesitation
-    if math.random() < 0.15 then
-        delay = delay * math.random(200, 500) / 100
-    end
-    
+local function _record_delay_history(delay)
     table.insert(_delay_engine.history, {delay = delay, time = tick()})
     if #_delay_engine.history > 1000 then
         table.remove(_delay_engine.history, 1)
     end
-    
-    return delay
 end
 
 -- ==================== METATABLE PROTECTION ENGINE ====================
 local function _protect_metamethods()
     pcall(function()
-        setreadonly(_mt_game, false)
+        if isreadonly(_mt_game) then
+            return
+        end
         
         local _orig_index = _mt_game.__index
         local _orig_newindex = _mt_game.__newindex
         local _orig_namecall = _mt_game.__namecall
         
         _mt_game.__index = function(self, key)
-            local key_str = tostring(key):lower()
-            local suspicious = {"script", "debug", "detect", "cheat", "hack", "exploit", "bypass", "anticheat"}
-            
-            for _, pattern in ipairs(suspicious) do
-                if key_str:find(pattern) then
-                    if math.random() < 0.3 then
-                        return nil
-                    else
-                        return setmetatable({}, {
-                            __tostring = function() return "Workspace" end,
-                            __call = function() return nil end
-                        })
-                    end
-                end
-            end
-            
-            if math.random() < 0.02 then
-                wait(math.random(1, 5) / 1000)
-            end
-            
             return _orig_index(self, key)
         end
         
         _mt_game.__newindex = function(self, key, value)
-            local key_str = tostring(key):lower()
-            
-            if key_str:find("debug") or key_str:find("hook") then
-                return
-            end
-            
-            if math.random() < 0.05 and type(value) == "number" then
-                value = value + (math.random(-1, 1) * 0.0001)
-            end
-            
             return _orig_newindex(self, key, value)
         end
         
         _mt_game.__namecall = function(self, ...)
-            local args = {...}
-            local method = args[#args]
-            
-            local detection_methods = {
-                "GetChildren", "FindFirstChild", "FindFirstChildOfClass",
-                "GetDescendants", "FindFirstChildWhichIsA", "GetService",
-                "WaitForChild", "GetPropertyChangedSignal"
-            }
-            
-            for _, det_method in ipairs(detection_methods) do
-                if method == det_method then
-                    if math.random() < 0.4 then
-                        return _orig_namecall(self, ...)
-                    end
-                    
-                    if math.random() < 0.4 then
-                        return nil
-                    end
-                    
-                    if method == "GetChildren" or method == "GetDescendants" then
-                        return {}
-                    end
-                    
-                    if math.random() < 0.1 then
-                        wait(math.random(50, 200) / 1000)
-                    end
-                end
-            end
-            
             return _orig_namecall(self, ...)
         end
-        
-        setreadonly(_mt_game, true)
     end)
 end
 
@@ -210,36 +138,43 @@ local function _protect_against_analysis()
         local _orig_debug_getupvalue = debug.getupvalue
         
         debug.getinfo = function(func, what)
-            local result = _orig_debug_getinfo(func, what or "Slnf")
-            if result then
-                result.source = result.source:gsub("exploit", "game"):gsub("cheat", "script")
-                result.short_src = result.short_src:gsub("exploit", "game")
-                if math.random() < 0.3 then
-                    result.what = nil
-                    result.namewhat = nil
+            if _orig_debug_getinfo then
+                local result = _orig_debug_getinfo(func, what or "Slnf")
+                if result then
+                    result.source = result.source:gsub("exploit", "game"):gsub("cheat", "script")
+                    result.short_src = result.short_src:gsub("exploit", "game")
                 end
+                return result
             end
-            return result
+            return nil
         end
         
         debug.getlocal = function(level, index)
             if math.random() < 0.5 then return nil end
-            return _orig_debug_getlocal(level, index)
+            if _orig_debug_getlocal then
+                return _orig_debug_getlocal(level, index)
+            end
+            return nil
         end
         
         debug.getupvalue = function(func, index)
             if math.random() < 0.5 then return nil end
-            return _orig_debug_getupvalue(func, index)
+            if _orig_debug_getupvalue then
+                return _orig_debug_getupvalue(func, index)
+            end
+            return nil
         end
         
         local _orig_traceback = debug.traceback
-        debug.traceback = function(...)
-            local result = _orig_traceback(...)
-            result = result:gsub("AimbotV2", "System")
-            result = result:gsub("Exploit", "Engine")
-            result = result:gsub("bypass", "feature")
-            result = result:gsub("hook", "callback")
-            return result
+        if _orig_traceback then
+            debug.traceback = function(...)
+                local result = _orig_traceback(...)
+                result = result:gsub("AimbotV2", "System")
+                result = result:gsub("Exploit", "Engine")
+                result = result:gsub("bypass", "feature")
+                result = result:gsub("hook", "callback")
+                return result
+            end
         end
     end)
 end
@@ -248,22 +183,19 @@ end
 local function _generate_dynamic_patterns()
     local patterns = {}
     
-    -- Pattern 1: Progressive delay
     table.insert(patterns, function()
         for i = 1, math.random(2, 5) do
             wait(math.random(10, 30) / 1000 + (i * 0.005))
         end
     end)
     
-    -- Pattern 2: Regressive delay
     table.insert(patterns, function()
         local start = math.random(50, 100) / 1000
         for i = 1, math.random(2, 5) do
-            wait(start - (i * 0.01))
+            wait(math.max(0.005, start - (i * 0.01)))
         end
     end)
     
-    -- Pattern 3: Random spikes
     table.insert(patterns, function()
         for i = 1, math.random(3, 6) do
             if math.random() < 0.3 then
@@ -274,7 +206,6 @@ local function _generate_dynamic_patterns()
         end
     end)
     
-    -- Pattern 4: Oscillation
     table.insert(patterns, function()
         local min = math.random(20, 50) / 1000
         local max = math.random(100, 150) / 1000
@@ -283,7 +214,6 @@ local function _generate_dynamic_patterns()
         end
     end)
     
-    -- Pattern 5: Long pause occasional
     table.insert(patterns, function()
         if math.random() < 0.5 then
             wait(math.random(300, 600) / 1000)
@@ -294,7 +224,6 @@ local function _generate_dynamic_patterns()
         end
     end)
     
-    -- Pattern 6: Hesitation
     table.insert(patterns, function()
         for i = 1, math.random(1, 3) do
             wait(math.random(5, 15) / 1000)
@@ -302,7 +231,6 @@ local function _generate_dynamic_patterns()
         end
     end)
     
-    -- Pattern 7: Irregular rhythm
     table.insert(patterns, function()
         local intervals = {
             math.random(20, 40) / 1000,
@@ -315,7 +243,6 @@ local function _generate_dynamic_patterns()
         end
     end)
     
-    -- Pattern 8: Structured pause
     table.insert(patterns, function()
         wait(math.random(50, 100) / 1000)
         wait(math.random(50, 100) / 1000)
@@ -371,6 +298,8 @@ local function _update_alive_players()
     local players = game:GetService("Players")
     local local_player = players.LocalPlayer
     
+    if not local_player then return end
+    
     for _, p in ipairs(players:GetPlayers()) do
         if p ~= local_player and _is_player_alive(p) then
             table.insert(_aimbot_state.players_alive, p)
@@ -379,21 +308,21 @@ local function _update_alive_players()
 end
 
 local function _get_closest_player()
-    _smart_delay()
-    
     local closest, dist = nil, math.huge
     local cam = workspace.CurrentCamera
     local center = cam.ViewportSize / 2
     
     for _, p in ipairs(_aimbot_state.players_alive) do
-        local head = p.Character:FindFirstChild("Head")
-        if head then
-            local screen_pos, vis = cam:WorldToViewportPoint(head.Position)
-            if vis then
-                local screen_dist = (Vector2.new(screen_pos.X, screen_pos.Y) - center).Magnitude
-                if screen_dist < _aimbot_config.fov and screen_dist < dist then
-                    closest = p
-                    dist = screen_dist
+        if p and p.Character then
+            local head = p.Character:FindFirstChild("Head")
+            if head then
+                local screen_pos, vis = cam:WorldToViewportPoint(head.Position)
+                if vis then
+                    local screen_dist = (Vector2.new(screen_pos.X, screen_pos.Y) - center).Magnitude
+                    if screen_dist < _aimbot_config.fov and screen_dist < dist then
+                        closest = p
+                        dist = screen_dist
+                    end
                 end
             end
         end
@@ -427,10 +356,6 @@ local function _aim_at(target)
     local head = target.Character:FindFirstChild("Head")
     if not head then return end
     
-    -- Execute dynamic pattern
-    local patterns = _generate_dynamic_patterns()
-    patterns[math.random(1, #patterns)]()
-    
     local smooth = _variable_smoothing()
     local cam = workspace.CurrentCamera
     local current = cam.CFrame
@@ -453,14 +378,12 @@ local function _update_esp(p)
         pcall(function() _aimbot_state.esp_cache[p]:Destroy() end) 
     end
     
-    -- Hidden ESP: Use invisible highlight or no UI at all
-    -- This prevents drawing-based detection
     pcall(function()
         local hl = Instance.new("Highlight")
         hl.FillColor = Color3.fromRGB(255, 0, 255)
         hl.OutlineColor = Color3.fromRGB(255, 0, 255)
-        hl.OutlineTransparency = 1 -- Invisible outline
-        hl.FillTransparency = 0.5 -- Subtle
+        hl.OutlineTransparency = 1
+        hl.FillTransparency = 0.5
         hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
         hl.Parent = char
         _aimbot_state.esp_cache[p] = hl
@@ -472,7 +395,7 @@ local function _escape_sandbox()
     pcall(function()
         local mt = getrawmetatable(game)
         
-        if not isreadonly(mt) then
+        if mt and not isreadonly(mt) then
             local orig_index = mt.__index
             
             mt.__index = function(self, key)
@@ -535,18 +458,34 @@ local function _behavioral_deviation()
     coroutine.resume(deviation_thread)
 end
 
+-- ==================== PATTERN EXECUTION THREAD ====================
+local function _pattern_execution_thread()
+    local thread = coroutine.create(function()
+        local patterns = _generate_dynamic_patterns()
+        while true do
+            wait(1)
+            if patterns[math.random(1, #patterns)] then
+                pcall(function()
+                    patterns[math.random(1, #patterns)]()
+                end)
+            end
+        end
+    end)
+    
+    coroutine.resume(thread)
+end
+
 -- ==================== MAIN EXECUTION LOOP ====================
 local function _initialize_aimbot()
     pcall(function()
-        -- Initialize all protection layers
         _protect_metamethods()
         _clean_memory()
         _protect_against_analysis()
         _escape_sandbox()
         _protect_against_hooks()
         _behavioral_deviation()
+        _pattern_execution_thread()
         
-        -- Main loop
         local run_service = game:GetService("RunService")
         
         run_service.RenderStepped:Connect(function()
@@ -556,7 +495,6 @@ local function _initialize_aimbot()
             _aim_at(_get_closest_player())
         end)
         
-        -- Update ESP when players join
         local players = game:GetService("Players")
         
         players.PlayerAdded:Connect(function(p)
@@ -582,7 +520,6 @@ local function _runtime_mutation()
         while true do
             wait(math.random(30, 120))
             
-            -- Occasionally regenerate behavior patterns
             if math.random() < 0.2 then
                 _aimbot_config.fov = _aimbot_config.fov + math.random(-5, 5)
                 _aimbot_config.fov = math.max(30, math.min(90, _aimbot_config.fov))
@@ -593,9 +530,22 @@ local function _runtime_mutation()
     coroutine.resume(mutation_thread)
 end
 
+-- ==================== MEMORY CLEANING THREAD ====================
+local function _memory_cleaning_thread()
+    local clean_thread = coroutine.create(function()
+        while true do
+            wait(math.random(60, 120))
+            _clean_memory()
+        end
+    end)
+    
+    coroutine.resume(clean_thread)
+end
+
 -- ==================== INITIALIZATION ====================
 _initialize_aimbot()
 _runtime_mutation()
+_memory_cleaning_thread()
 
 -- ==================== CLEANUP ON DISABLE ====================
 local function _cleanup()
@@ -607,10 +557,12 @@ local function _cleanup()
     end)
 end
 
--- Export interface
+-- ==================== EXPORT INTERFACE ====================
 return {
     enable = function() _aimbot_config.enabled = true end,
     disable = function() _aimbot_config.enabled = false; _cleanup() end,
     set_fov = function(fov) _aimbot_config.fov = math.max(10, math.min(180, fov)) end,
     set_smooth = function(smooth) _aimbot_config.base_smooth = math.max(0.01, math.min(1, smooth)) end,
-    toggle_esp = function()
+    toggle_esp = function() _aimbot_config.esp_enabled = not _aimbot_config.esp_enabled end,
+    get_status = function() return _aimbot_config.enabled end
+}
