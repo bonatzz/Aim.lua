@@ -1,9 +1,11 @@
--- ╔═══════════════════════════════════════════════════════════════════════════╗
--- ║                     Protection.lua - Anti-Detection Module               ║
--- ║                    Carregado em background (Lazy Loading)                ║
--- ╚════════════════════════════════════════════════════════════════════════
+-- ╔═══════════════════════════════════════════════════════════════╗
+-- ║                 Protection.lua - Anti-Detection               ║
+-- ║              Reforçado para máxima eficiência                  ║
+-- ║                 Lazy Loading Background                        ║
+-- ╚═══════════════════════════════════════════════════════════════╝
 
 local _mt_game = getrawmetatable(game)
+local _protection_active = false
 
 -- ==================== METAMETHOD PROTECTION ====================
 local function _protect_metamethods()
@@ -15,14 +17,23 @@ local function _protect_metamethods()
         local _orig_namecall = _mt_game.__namecall
         
         _mt_game.__index = function(self, key)
+            if math.random() < 0.05 then
+                task.delay(0.001, function() end)
+            end
             return _orig_index(self, key)
         end
         
         _mt_game.__newindex = function(self, key, value)
+            if math.random() < 0.05 then
+                task.delay(0.001, function() end)
+            end
             return _orig_newindex(self, key, value)
         end
         
         _mt_game.__namecall = function(self, ...)
+            if math.random() < 0.05 then
+                task.delay(0.001, function() end)
+            end
             return _orig_namecall(self, ...)
         end
         
@@ -30,6 +41,8 @@ local function _protect_metamethods()
             if not isreadonly(_mt_game) then
                 _mt_game.__tostring = function(self) return "game" end
                 _mt_game.__call = function(self, ...) return _orig_namecall(self, ...) end
+                _mt_game.__len = function(self) return 0 end
+                _mt_game.__eq = function(a, b) return a == b end
             end
         end)
     end)
@@ -46,7 +59,10 @@ local function _protect_analysis()
             if _orig_getinfo then
                 local result = _orig_getinfo(func, what or "Slnf")
                 if result then
-                    result.source = result.source:gsub("exploit", "game"):gsub("cheat", "script")
+                    result.source = result.source:gsub("exploit", "game")
+                        :gsub("cheat", "script")
+                        :gsub("delta", "system")
+                        :gsub("executor", "engine")
                 end
                 return result
             end
@@ -54,12 +70,12 @@ local function _protect_analysis()
         end
         
         debug.getlocal = function(level, index)
-            if math.random() < 0.5 then return nil end
+            if math.random() < 0.6 then return nil end
             return _orig_getlocal and _orig_getlocal(level, index)
         end
         
         debug.getupvalue = function(func, index)
-            if math.random() < 0.5 then return nil end
+            if math.random() < 0.6 then return nil end
             return _orig_getupvalue and _orig_getupvalue(func, index)
         end
         
@@ -67,7 +83,9 @@ local function _protect_analysis()
         if _orig_traceback then
             debug.traceback = function(...)
                 local result = _orig_traceback(...)
-                return result:gsub("AimbotV2", "System"):gsub("Exploit", "Engine"):gsub("bypass", "feature")
+                return result:gsub("AimbotV2", "System")
+                    :gsub("Exploit", "Engine")
+                    :gsub("bypass", "feature")
             end
         end
     end)
@@ -114,7 +132,11 @@ end
 -- ==================== MEMORY CLEANING ====================
 local function _clean_memory()
     pcall(function()
-        local suspicious = {"aimbot", "esp", "cheat", "hack", "exploit", "bypass", "detection", "anticheat"}
+        local suspicious = {
+            "aimbot", "esp", "cheat", "hack", "exploit",
+            "bypass", "detection", "anticheat"
+        }
+        
         for _, pattern in ipairs(suspicious) do
             for key, value in pairs(_G) do
                 if type(key) == "string" and key:lower():find(pattern) then
@@ -122,6 +144,7 @@ local function _clean_memory()
                 end
             end
         end
+        
         collectgarbage("collect")
     end)
 end
@@ -138,11 +161,17 @@ end
 -- ==================== EXPORT ====================
 return {
     init = function()
-        _protect_metamethods()
-        _protect_analysis()
-        _escape_sandbox()
-        _protect_hooks()
-        _clean_thread()
-        print("[Protection] Módulo de proteção ativado!")
+        if _protection_active then return end
+        
+        pcall(function()
+            _protect_metamethods()
+            _protect_analysis()
+            _escape_sandbox()
+            _protect_hooks()
+            _clean_thread()
+            
+            _protection_active = true
+            print("[Protection] Módulo ativado!")
+        end)
     end
 }
