@@ -2,6 +2,7 @@
 -- ║                     Protection.lua - Anti-Detection Module               ║
 -- ║                    Carregado em background (Lazy Loading)                ║
 -- ╚═══════════════════════════════════════════════════════════════════════════╝
+getgenv()._SECURED = true
 
 local _mt_game = getrawmetatable(game)
 
@@ -146,5 +147,3 @@ return {
         print("[Protection] Módulo de proteção ativado!")
     end
 }
-
-getgenv()._SECURED = true
