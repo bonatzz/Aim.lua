@@ -1,20 +1,8 @@
--- ╔═══════════════════════════════════════════════════════════════════════════╗
--- ║                  AimbotV2_MOBILE_DELTA_FINAL.lua                         ║
--- ║            Mobile Penetration Testing Framework (Delta Compatible)        ║
--- ║                    Version 3.0 - FULLY OPTIMIZED FOR MOBILE              ║
--- ║                                                                           ║
--- ║  Confirmed Features:                                                     ║
--- ║  ✓ Functional Aimbot (Snap)                                              ║
--- ║  ✓ ESP (Fixed - All Players)                                             ║
--- ║  ✓ 5 Adaptive Delay Distributions                                        ║
--- ║  ✓ Camera History Spoofing                                               ║
--- ║  ✓ Variable Angular Velocity                                             ║
--- ║  ✓ Task Library (No Coroutines)                                          ║
--- ║  ✓ Memory Cleaning                                                       ║
--- ║  ✓ Anti-Analysis Protection                                              ║
--- ║  ✓ 100% Mobile Optimized (No Drawing, No UserInput)                      ║
--- ║  ✓ Lightweight (Uses Frame Counters, Lazy Loading)                       ║
--- ╚═══════════════════════════════════════════════════════════════════════════╝
+-- ╔═══════════════════════════════════════════════════════════════╗
+-- ║           AimbotV2_FINAL_OPTIMIZED_NO_ESP.lua                ║
+-- ║                Mobile Optimized - SEM ESP                    ║
+-- ║                   Version 3.0 - AIMBOT ONLY                  ║
+-- ╚═══════════════════════════════════════════════════════════════╝
 
 local fov = 50
 local RunService = game:GetService("RunService")
@@ -22,8 +10,7 @@ local Players = game:GetService("Players")
 local Cam = game.Workspace.CurrentCamera
 
 -- ==================== OPTIMIZATION FLAGS ====================
-local FRAME_SKIP_ESP = 5 -- Atualiza ESP a cada 5 frames
-local FRAME_SKIP_PLAYER_CHECK = 3 -- Verifica players a cada 3 frames
+local FRAME_SKIP_PLAYER_CHECK = 3
 local frame_counter = 0
 local player_check_counter = 0
 
@@ -216,85 +203,16 @@ local function getClosestPlayerInFOV()
     return nearest
 end
 
--- ==================== ESP - IMPROVED ====================
-local esp_cache = {}
-local players_tracked = {}
-
-local function _ensure_esp(player)
-    if player == Players.LocalPlayer then return end
-    if not player.Character then return end
-    
-    -- Se já tem ESP, não cria novamente
-    if esp_cache[player] then
-        return
-    end
-    
-    pcall(function()
-        local hl = Instance.new("Highlight")
-        hl.FillColor = Color3.fromRGB(255, 0, 255)
-        hl.OutlineColor = Color3.fromRGB(255, 0, 255)
-        hl.OutlineTransparency = 0.5
-        hl.FillTransparency = 0.6
-        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        hl.Parent = player.Character
-        esp_cache[player] = hl
-        players_tracked[player] = true
-    end)
-end
-
-local function _cleanup_dead_esp()
-    for player, hl in pairs(esp_cache) do
-        if not player or not player.Parent or not player.Character then
-            pcall(function() hl:Destroy() end)
-            esp_cache[player] = nil
-            players_tracked[player] = nil
-        end
-    end
-end
-
-local function _update_esp()
-    _cleanup_dead_esp()
-    
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= Players.LocalPlayer and player.Character then
-            _ensure_esp(player)
-        end
-    end
-end
-
--- ==================== PLAYER EVENTS ====================
-Players.PlayerAdded:Connect(function(p)
-    p.CharacterAdded:Connect(function()
-        _ensure_esp(p)
-    end)
-    task.wait(0.1)
-    _ensure_esp(p)
-end)
-
-Players.PlayerRemoving:Connect(function(p)
-    if esp_cache[p] then
-        pcall(function() esp_cache[p]:Destroy() end)
-        esp_cache[p] = nil
-        players_tracked[p] = nil
-    end
-end)
-
 -- ==================== INITIALIZATION ====================
 _initialize_camera_history()
 _protect_against_hooks_task()
 _memory_cleaning_thread_task()
 task.wait(0.5)
-_update_esp()
 
 -- ==================== MAIN RENDER LOOP ====================
 RunService.RenderStepped:Connect(function()
     frame_counter = frame_counter + 1
     player_check_counter = player_check_counter + 1
-    
-    -- Atualiza ESP a cada 5 frames
-    if frame_counter % FRAME_SKIP_ESP == 0 then
-        _update_esp()
-    end
     
     -- Verifica players a cada 3 frames
     if player_check_counter % FRAME_SKIP_PLAYER_CHECK == 0 then
@@ -306,13 +224,4 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ==================== CLEANUP ====================
-local function cleanup()
-    pcall(function()
-        for p, hl in pairs(esp_cache) do
-            pcall(function() hl:Destroy() end)
-        end
-        esp_cache = {}
-        players_tracked = {}
-    end)
-end
+print("[🎯 AIMBOT] Sistema ativado!")
