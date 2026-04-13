@@ -1,149 +1,110 @@
--- ╔═══════════════════════════════════════════════════════════════╗
--- ║           Main.lua - FORCE LOCK + PROTEÇÕES COMPLETAS         ║
--- ║                                                                ║
--- ║  Camera Force Lock - Ignora travamentos                       ║
--- ║  Com: Anti-Hook, Memory Cleaning, Camera History, etc         ║
--- ╚═══════════════════════════════════════════════════════════════╝
+-- ╔════════════════════════════════════════════════════════════════╗
+-- ║     AIMBOT PURO v8.0 - MOBILE OPTIMIZADO                      ║
+-- ║                                                                 ║
+-- ║  Só Aimbot + Aimassist + Silent Aim                            ║
+-- ║  Sem ESP, Sem Teleport, Sem lixo                              ║
+-- ║  Proteção MEGA reforçada                                      ║
+-- ║                                                                 ║
+-- ╚════════════════════════════════════════════════════════════════╝
 
-local fov = 150  -- Aumentei para melhor detecção
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local Cam = game.Workspace.CurrentCamera
-
--- ==================== OPTIMIZATION FLAGS ====================
-local FRAME_SKIP_PLAYER_CHECK = 1  -- Não pula frames para ser mais responsivo
-local frame_counter = 0
-local player_check_counter = 0
-
--- ==================== ADAPTIVE DELAY DISTRIBUTIONS ====================
-local function _gaussian_random(mean, stddev)
-    local u1 = math.random() / 32767
-    local u2 = math.random() / 32767
-    if u1 < 0.0001 then u1 = 0.0001 end
-    local z0 = math.sqrt(-2 * math.log(u1)) * math.cos(2 * math.pi * u2)
-    return mean + (z0 * stddev)
+if (not game:IsLoaded()) then
+    game.Loaded:Wait()
 end
 
-local function _exponential_random(lambda)
-    return -math.log(math.random()) * lambda
-end
+print("═" .. string.rep("═", 60))
+print("⏳ Iniciando AIMBOT PURO v8.0...")
+print("═" .. string.rep("═", 60))
 
-local function _pareto_random(scale, shape)
-    return scale / math.pow(math.random(), 1 / shape)
-end
+-- ==================== MEGA PROTEÇÃO ====================
+local _mt_game = getrawmetatable(game)
 
-local function _weibull_random(scale, shape)
-    return scale * math.pow(-math.log(math.random()), 1 / shape)
-end
-
-local function _rayleigh_random(sigma)
-    return sigma * math.sqrt(-2 * math.log(math.random()))
-end
-
-local function _adaptive_delay()
-    local distributions = {
-        gaussian = function() return _gaussian_random(0.05, 0.02) end,
-        exponential = function() return _exponential_random(0.05) end,
-        pareto = function() return _pareto_random(0.03, 1.5) end,
-        weibull = function() return _weibull_random(0.06, 1.2) end,
-        rayleigh = function() return _rayleigh_random(0.05) end
-    }
-    
-    local dist_names = {"gaussian", "exponential", "pareto", "weibull", "rayleigh"}
-    local chosen = dist_names[math.random(1, #dist_names)]
-    local delay = distributions[chosen]()
-    delay = math.max(0.01, math.min(0.2, delay))
-    
-    if math.random() < 0.12 then
-        delay = delay * math.random(180, 350) / 100
-    end
-    
-    return delay
-end
-
--- ==================== CAMERA HISTORY SPOOFING ====================
-local _camera_history = {
-    positions = {},
-    velocities = {},
-    timestamps = {}
-}
-
-local function _initialize_camera_history()
-    local cam = Cam
-    for i = 1, 60 do
-        table.insert(_camera_history.positions, cam.CFrame.Position)
-        table.insert(_camera_history.timestamps, tick() - (60 - i) * (1/60))
-        table.insert(_camera_history.velocities, 0)
-    end
-end
-
-local function _record_camera_state()
-    if #_camera_history.positions > 1 then
-        local prev_pos = _camera_history.positions[#_camera_history.positions]
-        local curr_pos = Cam.CFrame.Position
-        local velocity = (curr_pos - prev_pos).Magnitude
+-- Anti-Analysis
+pcall(function()
+    if not isreadonly(_mt_game) then
+        local _orig_getinfo = debug.getinfo
+        local _orig_getlocal = debug.getlocal
+        local _orig_getupvalue = debug.getupvalue
         
-        table.insert(_camera_history.velocities, velocity)
-        if #_camera_history.velocities > 300 then
-            table.remove(_camera_history.velocities, 1)
-        end
-    end
-    
-    table.insert(_camera_history.positions, Cam.CFrame.Position)
-    table.insert(_camera_history.timestamps, tick())
-    
-    if #_camera_history.positions > 300 then
-        table.remove(_camera_history.positions, 1)
-        table.remove(_camera_history.timestamps, 1)
-    end
-end
-
--- ==================== VARIABLE ANGULAR VELOCITY ====================
-local function _variable_angular_velocity()
-    local base_velocity = math.random(150, 350) / 1000
-    
-    if math.random() < 0.15 then
-        base_velocity = base_velocity * math.random(150, 280) / 100
-    end
-    
-    if math.random() < 0.10 then
-        base_velocity = base_velocity * math.random(50, 80) / 100
-    end
-    
-    local variation = (math.random() - 0.5) * 0.06
-    base_velocity = base_velocity + variation
-    
-    return math.max(0.1, math.min(0.7, base_velocity))
-end
-
--- ==================== ANTI-HOOK DETECTION ====================
-local function _protect_against_hooks_task()
-    local original_functions = {
-        print = print,
-        warn = warn,
-        type = type,
-        pairs = pairs,
-    }
-    
-    task.spawn(function()
-        while true do
-            task.wait(math.random(8, 20))
-            
-            for func_name, original_func in pairs(original_functions) do
-                if _G[func_name] ~= original_func then
-                    _G[func_name] = original_func
+        debug.getinfo = function(func, what)
+            if _orig_getinfo then
+                local result = _orig_getinfo(func, what or "Slnf")
+                if result then
+                    result.source = result.source:gsub("aimbot", "system"):gsub("exploit", "game"):gsub("aim", "feature")
                 end
+                return result
+            end
+            return nil
+        end
+        
+        debug.getlocal = function(level, index)
+            if math.random() < 0.6 then return nil end
+            return _orig_getlocal and _orig_getlocal(level, index)
+        end
+        
+        debug.getupvalue = function(func, index)
+            if math.random() < 0.6 then return nil end
+            return _orig_getupvalue and _orig_getupvalue(func, index)
+        end
+        
+        local _orig_traceback = debug.traceback
+        if _orig_traceback then
+            debug.traceback = function(...)
+                local result = _orig_traceback(...)
+                return result:gsub("Aimbot", "Engine"):gsub("Silent", "Feature")
             end
         end
-    end)
-end
+    end
+end)
 
--- ==================== MEMORY CLEANING ====================
+-- Metamethod Protection
+pcall(function()
+    if not isreadonly(_mt_game) then
+        local _orig_index = _mt_game.__index
+        local _orig_newindex = _mt_game.__newindex
+        local _orig_namecall = _mt_game.__namecall
+        
+        _mt_game.__index = function(self, key)
+            if math.random() < 0.05 then task.delay(0.001, function() end) end
+            return _orig_index(self, key)
+        end
+        
+        _mt_game.__newindex = function(self, key, value)
+            if math.random() < 0.05 then task.delay(0.001, function() end) end
+            return _orig_newindex(self, key, value)
+        end
+        
+        _mt_game.__namecall = function(self, ...)
+            if math.random() < 0.05 then task.delay(0.001, function() end) end
+            return _orig_namecall(self, ...)
+        end
+    end
+end)
+
+-- Anti-Hook
+local original_functions = {
+    print = print,
+    warn = warn,
+    type = type,
+    pairs = pairs,
+}
+
+task.spawn(function()
+    while true do
+        task.wait(math.random(8, 20))
+        for func_name, original_func in pairs(original_functions) do
+            if _G[func_name] ~= original_func then
+                _G[func_name] = original_func
+            end
+        end
+    end
+end)
+
+-- Memory Cleaning
 local function _clean_memory()
     pcall(function()
         local suspicious = {
-            "aimbot", "esp", "cheat", "hack", "exploit",
-            "bypass", "detection", "anticheat"
+            "aimbot", "esp", "aim", "cheat", "hack", "exploit",
+            "bypass", "detection", "anticheat", "silent"
         }
         
         for _, pattern in ipairs(suspicious) do
@@ -158,104 +119,233 @@ local function _clean_memory()
     end)
 end
 
-local function _memory_cleaning_thread_task()
-    task.spawn(function()
-        while true do
-            task.wait(math.random(90, 150))
-            _clean_memory()
-        end
-    end)
+task.spawn(function()
+    while true do
+        task.wait(math.random(90, 150))
+        _clean_memory()
+    end
+end)
+
+print("🛡️  Proteção MEGA ativada!")
+
+-- ==================== SERVIÇOS ====================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+local Cam = Workspace.CurrentCamera
+local Mouse = LocalPlayer:GetMouse()
+
+-- ==================== CONFIG ====================
+local Config = {
+    Enabled = true,
+    SilentAim = true,
+    Wallbang = false,
+    FOV = 200,
+    Smoothness = 0.35,
+    HitChance = 100,
+    AimPart = "Head",
+    Lock = true,
+}
+
+-- ==================== DELAY RANDOMIZADO ====================
+local function _gaussian_random(mean, stddev)
+    local u1 = math.random() / 32767
+    local u2 = math.random() / 32767
+    if u1 < 0.0001 then u1 = 0.0001 end
+    local z0 = math.sqrt(-2 * math.log(u1)) * math.cos(2 * math.pi * u2)
+    return mean + (z0 * stddev)
 end
 
--- ==================== FORCE LOCK AIMBOT ====================
-local function lookAt(target)
+local function _adaptive_delay()
+    return math.max(0.01, math.min(0.15, _gaussian_random(0.04, 0.015)))
+end
+
+-- ==================== CAMERA HISTORY ====================
+local _camera_history = {
+    positions = {},
+    timestamps = {}
+}
+
+local function _initialize_camera_history()
+    for i = 1, 60 do
+        table.insert(_camera_history.positions, Cam.CFrame.Position)
+        table.insert(_camera_history.timestamps, tick() - (60 - i) * (1/60))
+    end
+end
+
+local function _record_camera_state()
+    table.insert(_camera_history.positions, Cam.CFrame.Position)
+    table.insert(_camera_history.timestamps, tick())
+    
+    if #_camera_history.positions > 300 then
+        table.remove(_camera_history.positions, 1)
+        table.remove(_camera_history.timestamps, 1)
+    end
+end
+
+_initialize_camera_history()
+
+-- ==================== FIND TARGET PART ====================
+local function FindTargetPart(character)
+    local priorities = {"Head", "UpperTorso", "Torso", "HumanoidRootPart"}
+    
+    for _, partName in ipairs(priorities) do
+        local part = character:FindFirstChild(partName)
+        if part then
+            return part
+        end
+    end
+    
+    return character:FindFirstChildOfClass("BasePart")
+end
+
+-- ==================== GET CLOSEST PLAYER ====================
+local function GetClosestPlayer()
+    local closest = nil
+    local closestDist = math.huge
+    local center = Cam.ViewportSize / 2
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local part = FindTargetPart(player.Character)
+            
+            if part then
+                local screenPos, onScreen = Cam:WorldToScreenPoint(part.Position)
+                
+                if onScreen then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                    
+                    if dist < closestDist and dist < Config.FOV then
+                        closestDist = dist
+                        closest = player
+                    end
+                end
+            end
+        end
+    end
+
+    return closest
+end
+
+-- ==================== FORCE AIM ====================
+local function ForceAim(player)
+    if not player or not player.Character then return end
+    
+    local part = FindTargetPart(player.Character)
+    if not part then return end
+    
     _adaptive_delay()
     
-    local lookVector = (target - Cam.CFrame.Position).unit
-    local smooth = _variable_angular_velocity()
+    local targetPos = part.Position
+    local camPos = Cam.CFrame.Position
+    local dir = (targetPos - camPos).Unit
     
-    local newCFrame = CFrame.new(Cam.CFrame.Position, Cam.CFrame.Position + lookVector)
-    Cam.CFrame = Cam.CFrame:Lerp(newCFrame, smooth)
+    local newCFrame = CFrame.new(camPos, camPos + dir)
+    Cam.CFrame = Cam.CFrame:Lerp(newCFrame, Config.Smoothness)
     
     _record_camera_state()
 end
 
--- ==================== GET CLOSEST PLAYER (DETECTA QUALQUER PARTE) ====================
-local function getClosestPlayerInFOV()
-    local nearest = nil
-    local last = math.huge
-    local playerMousePos = Cam.ViewportSize / 2
+-- ==================== SILENT AIM HOOKING ====================
+local CurrentTarget = nil
+local randomised = math.random(1, 10)
+local randomisedVector = Vector3.new(math.random(1, 10), math.random(1, 10), math.random(1, 10))
 
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= Players.LocalPlayer then
-            local part = player.Character and player.Character:FindFirstChild("Head")
-            if part then
-                local ePos, isVisible = Cam:WorldToViewportPoint(part.Position)
-                local distance = (Vector2.new(ePos.x, ePos.y) - playerMousePos).Magnitude
+Mouse.Move:Connect(function()
+    randomised = math.random(1, 10)
+    randomisedVector = Vector3.new(math.random(1, 10), math.random(1, 10), math.random(1, 10))
+end)
 
-                if distance < last and isVisible and distance < fov then
-                    last = distance
-                    nearest = player
-                end
-            end
-        end
-    end
+local OldMetaMethods = {}
+local MetaMethodHooks = {}
 
-    return nearest
-end
+MetaMethodHooks.Index = function(...)
+    local __Index = OldMetaMethods.__index
 
--- ==================== OVERRIDE CAMERA SCRIPTS (FORÇA LOCK) ====================
-local function DisableConflictingScripts()
-    pcall(function()
-        local camera = Cam
-        local lastValidCFrame = camera.CFrame
+    if (CurrentTarget and ... == Mouse and not checkcaller()) then
+        local CallingScript = pcall(function() return getfenv(2).script end)
         
-        task.spawn(function()
-            while true do
-                task.wait(0.016)  -- 60 FPS
+        local _Mouse, Index = ...
+        if (type(Index) == 'string') then
+            Index = string.gsub(string.sub(Index, 0, 100), "%z.*", "")
+        end
+        
+        local PassedChance = math.random(1, 100) < Config.HitChance
+        if (PassedChance and Config.SilentAim and CurrentTarget.Character) then
+            local targetPart = FindTargetPart(CurrentTarget.Character)
+            if targetPart then
+                Index = string.gsub(Index, "^%l", string.upper)
                 
-                -- Se câmera foi puxada para longe, força voltar
-                if (camera.CFrame.Position - lastValidCFrame.Position).Magnitude > 8 then
-                    camera.CFrame = lastValidCFrame
+                if (Index == "Target") then
+                    return targetPart
                 end
-                
-                lastValidCFrame = camera.CFrame
+                if (Index == "Hit") then
+                    local hit = __Index(...)
+                    local pos = targetPart.Position + randomisedVector / 10
+                    return CFrame.new(pos.X, pos.Y, pos.Z, unpack({hit:components()}, 4))
+                end
+                if (Index == "X") then
+                    return Mouse.X + randomised / 10
+                end
+                if (Index == "Y") then
+                    return Mouse.Y + randomised / 10
+                end
             end
-        end)
-    end)
+        end
+    end
+
+    return __Index(...)
 end
 
--- ==================== INITIALIZATION ====================
-_initialize_camera_history()
-_protect_against_hooks_task()
-_memory_cleaning_thread_task()
-DisableConflictingScripts()
-task.wait(0.5)
+MetaMethodHooks.Namecall = function(...)
+    local __Namecall = OldMetaMethods.__namecall
+    return __Namecall(...)
+end
 
--- ==================== MAIN RENDER LOOP ====================
-RunService.RenderStepped:Connect(function()
-    frame_counter = frame_counter + 1
-    player_check_counter = player_check_counter + 1
+for MMName, MMFunc in pairs(MetaMethodHooks) do
+    local MetaMethod = string.format("__%s", string.lower(MMName))
+    OldMetaMethods[MetaMethod] = hookmetamethod(game, MetaMethod, MMFunc)
+end
+
+-- ==================== MAIN LOOP ====================
+local isLocked = false
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
     
-    -- Verifica players a cada frame (sem pular)
-    if player_check_counter % FRAME_SKIP_PLAYER_CHECK == 0 then
-        local closest = getClosestPlayerInFOV()
-        if closest and closest.Character and closest.Character:FindFirstChild("Head") then
-            lookAt(closest.Character.Head.Position)
-        end
-        player_check_counter = 0
+    if input.KeyCode == Enum.KeyCode.MouseButton2 then
+        isLocked = true
+    end
+    
+    if input.KeyCode == Enum.KeyCode.G then
+        Config.Enabled = not Config.Enabled
+        print(Config.Enabled and "✅ Aimbot ON" or "❌ Aimbot OFF")
     end
 end)
 
-print("[🎯 AIMBOT] FORCE LOCK v7.0 ativado com proteções completas!")
-
--- ==================== CONTROLE ====================
-pcall(function()
-    local UserInput = game:GetService("UserInputService")
-    UserInput.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
-        if input.KeyCode == Enum.KeyCode.G then
-            print("❌ Aimbot desabilitado (tecla G)")
-        end
-    end)
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+    if input.KeyCode == Enum.KeyCode.MouseButton2 then
+        isLocked = false
+    end
 end)
+
+RunService.RenderStepped:Connect(function()
+    if not Config.Enabled then return end
+    
+    CurrentTarget = GetClosestPlayer()
+    
+    if isLocked and CurrentTarget and Config.Lock then
+        ForceAim(CurrentTarget)
+    end
+end)
+
+print("\n" .. "═":rep(60))
+print("✅ AIMBOT PURO v8.0 CARREGADO!")
+print("🎯 Silent Aim ativado")
+print("🔐 Proteção total ativada")
+print("📌 Tecla M2: Mirar")
+print("📌 Tecla G: Ligar/Desligar")
+print("═":rep(60))
