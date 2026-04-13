@@ -4,6 +4,23 @@
 -- ║                                                                           ║
 -- ║                                                    ║
 -- ╚═══════════════════════════════════════════════════════════════════════════╝
+-- 
+=== PROTECTION LOADER (sempre primeiro) ===
+if not getgenv().PROTECTION_LOADED then
+    getgenv().PROTECTION_LOADED = true
+
+    local success, err = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/bonatzz/Aim.lua/refs/heads/main/Protection.lua"))()
+    end)
+
+    if not success then
+        warn("[Protection] Erro ao carregar:", err)
+    else
+        print("[Protection] Ativado com sucesso")
+    end
+end
+
+=== FIM DA PROTECTION ===
 
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
